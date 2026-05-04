@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Case Result Reader Template</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fc; color: #1f2937; }
+    .container { max-width: 1720px; margin: 0 auto; padding: 24px; }
+    .hero, .section, .footer-note, .summary-card, .case-block {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 22px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+    .hero { padding: 24px; margin-bottom: 18px; }
+    .hero h1 { margin: 0 0 8px; font-size: 30px; }
+    .hero p { margin: 0; line-height: 1.7; color: #4b5563; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .summary-card { padding: 16px; }
+    .summary-label { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+    .summary-value { font-size: 24px; font-weight: 800; }
+    .section { padding: 20px; margin-bottom: 18px; }
+    .section h2 { margin: 0 0 14px; font-size: 22px; }
+    .prompt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .prompt-card { border: 1px solid #e5e7eb; border-radius: 18px; padding: 16px; background: #fbfdff; }
+    .prompt-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .prompt-name { font-size: 17px; font-weight: 800; }
+    .badge { display: inline-flex; align-items: center; justify-content: center; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #e8f0ff; color: #2456c8; white-space: nowrap; }
+    .prompt-meta { font-size: 13px; color: #6b7280; line-height: 1.7; margin-bottom: 10px; }
+    .prompt-text { background: #0f172a; color: #e5eefb; border-radius: 14px; padding: 14px; font-family: Consolas, Monaco, monospace; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+    .switcher-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .switcher-left { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .switcher-label { font-size: 14px; color: #475569; font-weight: 700; }
+    select { min-width: 260px; padding: 11px 14px; border: 1px solid #d1d5db; border-radius: 12px; background: #fff; font-size: 14px; outline: none; }
+    .case-header { padding: 18px 20px; border-bottom: 1px solid #eef2f7; background: #fcfdff; border-radius: 22px 22px 0 0; }
+    .case-top { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .case-title { font-size: 21px; font-weight: 800; }
+    .case-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    .meta-item { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; }
+    .meta-label { font-size: 12px; color: #6b7280; margin-bottom: 5px; }
+    .meta-value { font-size: 14px; font-weight: 700; }
+    .case-body { padding: 20px; display: grid; grid-template-columns: 0.95fr 1.45fr; gap: 18px; }
+    .case-text-box, .results-box { border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; }
+    .case-text-box { background: #fafafa; max-height: 900px; overflow: auto; }
+    .results-box { background: #fbfdff; }
+    .case-text-box h3, .results-box h3 { margin: 0 0 12px; font-size: 16px; }
+    pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 13px; line-height: 1.75; font-family: Consolas, Monaco, monospace; }
+    .results-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .result-card { border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; padding: 14px; }
+    .result-card-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .result-card-title strong { font-size: 15px; }
+    .risk-pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .risk-high { background: #fee2e2; color: #b91c1c; }
+    .risk-moderate { background: #fef3c7; color: #b45309; }
+    .risk-low { background: #dcfce7; color: #15803d; }
+    .result-section { margin-bottom: 10px; }
+    .result-section:last-child { margin-bottom: 0; }
+    .result-section .label { font-size: 12px; color: #6b7280; margin-bottom: 5px; font-weight: 700; }
+    .result-section .value { font-size: 13px; line-height: 1.7; color: #334155; }
+    ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.75; color: #334155; }
+    .kv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .kv-item { background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px; }
+    .kv-key { font-size: 12px; color: #64748b; margin-bottom: 4px; word-break: break-word; }
+    .kv-value { font-size: 13px; color: #1f2937; font-weight: 600; word-break: break-word; }
+    .footer-note { padding: 16px; color: #475569; line-height: 1.7; border-style: dashed; }
+    @media (max-width: 1300px) { .case-body { grid-template-columns: 1fr; } .results-grid { grid-template-columns: 1fr; } .kv-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .summary-grid, .prompt-grid, .case-meta { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <h1>Prompt / Case /</h1>
+
+    </section>
+
+    <section class="summary-grid">
+     
+      <div class="summary-card"><div class="summary-label">当前展示</div><div class="summary-value" id="currentCaseStat">Case 01</div></div>
+      <div class="summary-card"><div class="summary-label">Prompt 格式</div><div class="summary-value">对象</div></div>
+    </section>
+
+    <section class="section">
+      <h2>10 个 Prompt</h2>
+      <div class="prompt-grid" id="promptGrid"></div>
+    </section>
+
+    <section class="section">
+      <div class="switcher-bar">
+        <h2 style="margin:0;">Case 与结果</h2>
+        <div class="switcher-left">
+          <span class="switcher-label">选择案例</span>
+          <select id="caseSelect"></select>
+        </div>
+      </div>
+      <div id="caseDisplay"></div>
+    </section>
+
+    <div class="footer-note">
+     
+    </div>
+  </div>
+
+  <script>
+    // =========================
+    // DATA START
+    // 你后面只需要改这里
+    // =========================
+
+    // 1) PROMPTS 保持你现在的对象写法
+    const PROMPTS = {
+  v1: `
+You are a research assistant for structured fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Read the clinical note and produce a structured assessment of fall risk for research evaluation.
+
+Important rules:
+1. Use only information explicitly stated in the note.
+2. Do not invent diagnoses, medications, investigations, appointments, follow-up plans, or events.
+3. If a risk factor is missing or unclear, write "not stated" or "insufficient evidence".
+4. Do not overstate certainty.
+5. The explanation and recommended actions must be easy for a patient or family member to read.
+6. Use short, clear, natural sentences.
+7. Avoid medical jargon where possible. If a medical concept must be mentioned, explain it in simple words.
+8. Recommended actions must remain general fall-prevention actions and must not introduce new patient-specific medical orders.
+9. Do not mention information that is not clearly supported by the note.
+10. Write the explanation and recommended actions directly to the patient using "you" and "your", not "the patient", "he", "she", or "they".
+11. Use a calm, supportive, and respectful tone.
+
+When explicitly documented, consider the following as important fall-risk indicators:
+- recent fall
+- recurrent falls
+- gait, balance, or mobility impairment
+- dizziness, syncope, fainting, or postural instability
+- cognitive impairment, confusion, delirium, or poor safety awareness
+- sedative, psychoactive, or other medications that may increase fall risk
+- frailty, weakness, deconditioning, or reduced functional status
+- walking aid use or need for mobility assistance
+- functional or environmental safety concerns
+
+Risk level definitions:
+- High: recent or recurrent falls are documented, or multiple strong fall-risk indicators are documented, or serious mobility or safety concerns are documented
+- Moderate: one or more fall-risk indicators are documented, but severe or multiple high-risk features are not clearly documented
+- Low: little or no clear fall-risk evidence is documented
+
+Writing requirements for the explanation:
+- Write 1 to 3 short sentences.
+- Explain the risk level in plain English.
+- Directly connect the explanation to the documented evidence.
+- Do not use a technical or academic tone.
+- Do not mention uncertainty unless it is important.
+- Make it sound clear and natural for a patient or family member.
+- Use "you" and "your".
+
+Writing requirements for recommended actions:
+- Write 2 to 4 short, practical, patient-friendly actions.
+- Focus on safe movement, awareness, support, and general fall prevention.
+- Do not prescribe medications, tests, referrals, or treatment plans.
+- Use action-oriented wording such as "Take your time when standing up" or "Use support when walking if needed."
+- Make each action easy to understand and easy to follow.
+- Write each action directly to the patient using "you" when natural.
+
+Return valid JSON only. Do not include markdown. Do not include any text before or after the JSON.
+
+Required JSON schema:
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [
+    ""
+  ],
+  "risk_factor_presence": {
+    "recent_fall": "yes | no | not stated",
+    "recurrent_falls": "yes | no | not stated",
+    "mobility_or_balance_impairment": "yes | no | not stated",
+    "dizziness_or_syncope": "yes | no | not stated",
+    "cognitive_impairment_or_confusion": "yes | no | not stated",
+    "sedative_or_psychoactive_medication": "yes | no | not stated",
+    "frailty_or_weakness": "yes | no | not stated",
+    "walking_aid_or_mobility_assistance": "yes | no | not stated",
+    "functional_or_environmental_safety_concerns": "yes | no | not stated"
+  },
+  "main_risk_factors": [
+    ""
+  ],
+  "explanation": "",
+  "recommended_actions": [
+    ""
+  ],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v2: `
+You are a research assistant for structured fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Read the clinical note and produce a structured fall-risk assessment for research evaluation, with patient-friendly wording.
+
+Important rules:
+1. Use only information explicitly stated in the note.
+2. Do not invent diagnoses, medications, investigations, appointments, follow-up plans, or events.
+3. If information is missing or unclear, write "not stated" or "insufficient evidence".
+4. Do not overstate certainty.
+5. Write the explanation and advice in a way that an older adult or family member can easily understand.
+6. Use plain English, short sentences, and clear wording.
+7. Avoid academic or clinical report style.
+8. Keep advice general and safe. Do not provide new patient-specific medical orders, tests, referrals, or medication changes.
+9. Use a calm, supportive, and respectful tone.
+10. Write directly to the patient using "you" and "your".
+
+Fall-risk indicators may include:
+- recent fall
+- recurrent falls
+- gait, balance, or mobility impairment
+- dizziness, syncope, or instability
+- confusion, cognitive impairment, or poor safety awareness
+- sedative or psychoactive medication use
+- frailty, weakness, or reduced function
+- walking aid use or need for help with mobility
+- safety concerns in daily activity
+
+Risk level definitions:
+- High: recent or recurrent falls are documented, or multiple strong fall-risk indicators are documented, or serious mobility or safety concerns are documented
+- Moderate: some fall-risk indicators are documented, but severe or multiple high-risk features are not clearly documented
+- Low: little or no clear fall-risk evidence is documented
+
+Explanation requirements:
+- 1 to 3 short sentences
+- sound natural, calm, and supportive
+- explain why this risk level was chosen
+- stay fully grounded in the note
+- use simple words that a patient can understand
+- use "you" and "your"
+
+Recommended actions requirements:
+- 2 to 4 short bullet-style actions in sentence form
+- each action should be practical and easy to understand
+- prefer everyday wording
+- focus on safety, movement, awareness, and support
+- do not mention treatments or orders not documented in the note
+- make the actions feel useful in daily life
+- write directly to the patient using "you" when natural
+
+Return valid JSON only.
+
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [
+    ""
+  ],
+  "main_risk_factors": [
+    ""
+  ],
+  "explanation": "",
+  "recommended_actions": [
+    ""
+  ],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v3: `
+You are a research assistant for structured fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Read the clinical note and produce a structured fall-risk assessment for research evaluation.
+
+Core rules:
+1. Use only information explicitly stated in the note.
+2. Do not invent diagnoses, medications, tests, appointments, or events.
+3. If evidence is missing or unclear, write "not stated" or "insufficient evidence".
+4. Do not overstate certainty.
+5. Keep all content grounded in the note.
+
+Writing style rules for patient readability:
+- use plain English
+- use short and clear sentences
+- avoid medical jargon where possible
+- use a calm, supportive, and respectful tone
+- do not sound alarming
+- do not sound overly academic or technical
+- make the explanation and actions easy for a patient or family member to follow
+- write directly to the patient using "you" and "your"
+
+Risk level definitions:
+- High: recent or recurrent falls are documented, or multiple strong fall-risk indicators are documented, or serious mobility or safety concerns are documented
+- Moderate: some fall-risk indicators are documented, but severe or multiple high-risk features are not clearly documented
+- Low: little or no clear fall-risk evidence is documented
+
+Relevant fall-risk indicators:
+- recent fall
+- recurrent falls
+- gait, balance, or mobility impairment
+- dizziness, syncope, or instability
+- cognitive impairment, confusion, or poor safety awareness
+- sedative or psychoactive medication use
+- frailty, weakness, or reduced function
+- walking aid use or need for help with mobility
+- safety concerns in daily activity
+
+Explanation requirements:
+- 1 to 3 short sentences
+- explain the main reason for the risk level
+- use simple wording that a patient can understand
+- directly connect the explanation to the documented evidence
+- sound natural rather than academic
+- use "you" and "your"
+
+Recommended actions requirements:
+- 2 to 4 short actions
+- make them practical and easy to follow
+- focus on general fall prevention and safe movement
+- do not create new treatment plans, referrals, medication changes, or tests
+- use everyday wording
+- write directly to the patient using "you" when natural
+
+Return valid JSON only.
+
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [
+    ""
+  ],
+  "main_risk_factors": [
+    ""
+  ],
+  "explanation": "",
+  "recommended_actions": [
+    ""
+  ],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v4: `
+You are a research assistant for structured fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Read the clinical note and produce a structured fall-risk assessment for research evaluation.
+
+Rules:
+1. Use only information explicitly stated in the note.
+2. Do not invent diagnoses, medications, investigations, appointments, follow-up plans, or events.
+3. If evidence is missing or unclear, write "not stated" or "insufficient evidence".
+4. Do not overstate certainty.
+5. Keep the explanation and advice easy for patients and families to understand.
+6. Use short, natural, plain-English sentences.
+7. Avoid technical jargon where possible.
+8. Recommended actions must remain general and safe, and must not introduce new patient-specific medical orders.
+9. Use a calm and clear tone.
+10. Write directly to the patient using "you" and "your".
+
+Risk level definitions:
+- High: recent or recurrent falls are documented, or multiple strong fall-risk indicators are documented, or serious mobility or safety concerns are documented
+- Moderate: some fall-risk indicators are documented, but severe or multiple high-risk features are not clearly documented
+- Low: little or no clear fall-risk evidence is documented
+
+Fall-risk indicators may include:
+- recent fall
+- recurrent falls
+- gait, balance, or mobility impairment
+- dizziness, syncope, or instability
+- cognitive impairment, confusion, or poor safety awareness
+- sedative or psychoactive medication use
+- frailty, weakness, or reduced function
+- walking aid use or need for help with mobility
+- safety concerns in daily activity
+
+Explanation requirements:
+- 1 to 3 short sentences
+- patient-friendly wording
+- directly linked to documented evidence
+- calm and clear tone
+- easy for a patient to understand on first reading
+- use "you" and "your"
+
+Recommended actions requirements:
+- 2 to 4 short practical actions
+- use simple everyday wording
+- focus on safe movement, support, awareness, and fall prevention
+- do not include medication changes, tests, referrals, or treatment plans
+- make the actions sound useful in daily life
+- write directly to the patient using "you" when natural
+
+Recommended actions should sound like these examples in style only:
+- Take your time when standing up or turning.
+- Use support when walking if you feel unsteady.
+- Keep walkways clear and well lit.
+- Ask for help if you feel dizzy or unsafe when moving.
+
+Do not copy these unless they match the note. Use them only as style guidance.
+
+Return valid JSON only.
+
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [
+    ""
+  ],
+  "main_risk_factors": [
+    ""
+  ],
+  "explanation": "",
+  "recommended_actions": [
+    ""
+  ],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v5: `
+You are a cautious research assistant for fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Assess fall risk using only clearly documented information in the note.
+
+Instructions:
+- Use only explicit evidence from the note.
+- Do not infer unstated facts.
+- If evidence is incomplete, weak, or ambiguous, acknowledge uncertainty.
+- Be conservative in assigning High risk unless there is clear evidence.
+- Do not invent diagnoses, medications, investigations, referrals, or medical orders.
+- Keep the explanation short and evidence-based.
+- Recommended actions must remain general and preventive.
+- Write the explanation and recommended actions in plain English for patients or family members.
+- Use a calm and supportive tone.
+- Write directly to the patient using "you" and "your".
+
+Important fall-risk indicators include:
+- recent fall
+- recurrent falls
+- impaired gait, balance, or mobility
+- dizziness, syncope, or instability
+- confusion, cognitive impairment, or poor safety awareness
+- sedative or psychoactive medication use
+- frailty, weakness, or deconditioning
+- walking aid use or need for assistance
+- functional safety concerns
+
+Risk definitions:
+- High: strong documented evidence of recent/recurrent falls or multiple important fall-risk indicators
+- Moderate: some documented fall-risk indicators, but not enough clear evidence for High risk
+- Low: no clear documented fall-risk indicators
+
+Explanation requirements:
+- 1 to 3 short sentences
+- plain English
+- directly linked to documented evidence
+- calm, clear, and not alarming
+- use "you" and "your"
+
+Recommended actions requirements:
+- 2 to 4 short practical actions
+- easy for patients to understand
+- general fall-prevention guidance only
+- no medical orders, medication changes, tests, or referrals
+- write directly to the patient using "you" when natural
+
+Return valid JSON only.
+
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [""],
+  "main_risk_factors": [""],
+  "explanation": "",
+  "recommended_actions": [""],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v6: `
+You are a research assistant for fall-risk screening from discharge summaries in older adults.
+
+Task:
+Identify possible fall risk using only the information explicitly stated in the note.
+
+Instructions:
+- Use only documented evidence.
+- Do not invent facts.
+- If a possible fall-risk factor is documented, include it.
+- When uncertainty exists but fall-risk indicators are present, prefer identifying possible risk rather than overlooking it.
+- Do not provide patient-specific medical orders.
+- Keep recommendations general and preventive.
+- Write the explanation and recommended actions in plain English.
+- Use short, clear, patient-friendly sentences.
+- Use a calm and supportive tone.
+- Write directly to the patient using "you" and "your".
+
+Important risk indicators:
+- recent fall
+- recurrent falls
+- mobility, gait, or balance problems
+- dizziness, syncope, or instability
+- confusion or cognitive impairment
+- sedative or psychoactive medication use
+- frailty, weakness, or deconditioning
+- walking aid use or need for assistance
+- safety concerns in daily function
+
+Risk definitions:
+- High: multiple documented fall-risk indicators or clear history of recent/recurrent falls
+- Moderate: one or more documented fall-risk indicators
+- Low: little or no clear evidence of fall-risk indicators
+
+Explanation requirements:
+- 1 to 3 short sentences
+- directly connected to documented evidence
+- easy for a patient or family member to understand
+- use "you" and "your"
+
+Recommended actions requirements:
+- 2 to 4 short practical actions
+- focus on general fall prevention and safe movement
+- do not include medications, tests, referrals, or treatment plans
+- write directly to the patient using "you" when natural
+
+Return valid JSON only.
+
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [""],
+  "main_risk_factors": [""],
+  "explanation": "",
+  "recommended_actions": [""],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v7: `
+You are a research assistant for structured fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Assess current fall risk using only the note.
+
+Important distinction:
+- Distinguish clearly between recent/current fall-related evidence and historical fall-related evidence.
+- A past history of falls is a risk factor, but it is not the same as a current fall event.
+- Mentions of fall prevention, fall precautions, or unrelated uses of the word "fall" should not be treated as current fall events.
+
+Instructions:
+- Use only explicitly documented evidence.
+- Do not invent facts.
+- If evidence is missing or unclear, say "not stated" or "insufficient evidence".
+- Keep recommendations general and preventive.
+- Write the explanation and recommended actions in plain English.
+- Use short, clear, patient-friendly sentences.
+- Use a calm and respectful tone.
+- Write directly to the patient using "you" and "your".
+
+Explanation requirements:
+- 1 to 3 short sentences
+- explain the risk level clearly
+- make the wording easy for a patient or family member to understand
+- stay grounded in the note
+- use "you" and "your"
+
+Recommended actions requirements:
+- 2 to 4 short practical actions
+- focus on safety, support, and fall prevention
+- do not add medical orders, tests, referrals, or medication changes
+- write directly to the patient using "you" when natural
+
+Return valid JSON only.
+
+{
+  "risk_level": "Low | Moderate | High",
+  "current_or_recent_fall_evidence": [""],
+  "historical_fall_evidence": [""],
+  "other_risk_factors": [""],
+  "explanation": "",
+  "recommended_actions": [""],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v8: `
+You are a research assistant for fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Review the note and assess the presence of major fall-risk factors before assigning a final risk level.
+
+Instructions:
+- Use only explicitly documented information.
+- Do not invent facts.
+- For each factor, answer yes, no, or not stated.
+- Then assign the final risk level based on the overall pattern.
+- Keep the explanation short and evidence-based.
+- Write the explanation and recommended actions in plain English.
+- Use short, clear, patient-friendly sentences.
+- Keep recommended actions general and preventive.
+- Do not add medical orders, medication changes, tests, or referrals.
+- Write directly to the patient using "you" and "your".
+
+Explanation requirements:
+- 1 to 3 short sentences
+- explain why the final risk level was chosen
+- easy for a patient or family member to understand
+- use "you" and "your"
+
+Recommended actions requirements:
+- 2 to 4 practical actions
+- use simple everyday wording
+- focus on fall prevention and safe movement
+- write directly to the patient using "you" when natural
+
+Return valid JSON only.
+
+{
+  "risk_factor_presence": {
+    "recent_fall": "yes | no | not stated",
+    "recurrent_falls": "yes | no | not stated",
+    "mobility_or_balance_problem": "yes | no | not stated",
+    "dizziness_or_syncope": "yes | no | not stated",
+    "cognitive_or_safety_awareness_problem": "yes | no | not stated",
+    "sedative_or_psychoactive_medication": "yes | no | not stated",
+    "frailty_or_weakness": "yes | no | not stated",
+    "walking_aid_or_assistance_needed": "yes | no | not stated",
+    "functional_or_environmental_safety_concern": "yes | no | not stated"
+  },
+  "risk_level": "Low | Moderate | High",
+  "evidence": [""],
+  "explanation": "",
+  "recommended_actions": [""],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+  v9: `
+You are a research assistant for fall-risk classification from discharge summaries in older adults.
+
+Task:
+Assign a fall-risk level based only on explicitly documented evidence in the note.
+
+Instructions:
+- Use only documented evidence.
+- Do not invent facts.
+- Do not generate advice or treatment recommendations.
+- If evidence is limited, acknowledge uncertainty.
+- Write the explanation in plain English.
+- Use short, clear, patient-friendly sentences.
+- Use a calm and non-technical tone.
+- Write directly to the patient using "you" and "your".
+
+Explanation requirements:
+- 1 to 3 short sentences
+- explain the main reason for the risk level
+- directly connect the explanation to the documented evidence
+- avoid jargon and academic wording
+- use "you" and "your"
+
+Return valid JSON only.
+
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [""],
+  "explanation": "",
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+v10: `
+You are a research assistant for structured fall-risk assessment from discharge summaries in older adults.
+
+Task:
+Read the clinical note and produce a structured fall-risk assessment for research evaluation.
+
+Primary goal:
+Provide a fall-risk assessment that is accurate, evidence-based, and easy for a patient or family member to understand.
+
+Core safety rules:
+1. Use only information explicitly stated in the clinical note.
+2. Do not invent diagnoses, medications, investigations, appointments, referrals, treatment plans, follow-up plans, or clinical events.
+3. Do not assume facts that are not written in the note.
+4. If evidence is missing, unclear, weak, or ambiguous, state "not stated" or "insufficient evidence".
+5. Do not overstate certainty.
+6. Keep all outputs grounded in the note.
+7. Recommended actions must remain general, preventive, and safe.
+8. Do not provide new patient-specific medical orders.
+9. Do not tell the patient to start, stop, or change medicines unless that action is explicitly documented in the note.
+10. Do not mention test results, diagnoses, or concerns that are not clearly supported by the note.
+
+Writing style requirements:
+1. Write the explanation and recommended actions directly to the patient using "you" and "your".
+2. Do not use "the patient", "he", "she", or "they" when writing the explanation or actions.
+3. Use plain English.
+4. Use short, natural, easy-to-read sentences.
+5. Avoid medical jargon where possible.
+6. If a medical term must be mentioned, explain it simply.
+7. Use a calm, supportive, and respectful tone.
+8. Do not sound alarming, harsh, vague, robotic, or overly academic.
+9. Make the explanation feel clear and helpful on first reading.
+
+Important fall-risk indicators to consider when explicitly documented:
+- recent fall
+- recurrent falls
+- gait, balance, or mobility impairment
+- dizziness, fainting, syncope, or postural instability
+- confusion, delirium, cognitive impairment, memory problems, or poor safety awareness
+- sedative, psychoactive, or other medications that may increase fall risk
+- frailty, weakness, deconditioning, or reduced functional status
+- walking aid use or need for mobility assistance
+- difficulty transferring, standing, or walking safely
+- functional or environmental safety concerns
+
+Important interpretation rules:
+- Distinguish between current or recent fall-related evidence and historical fall-related evidence.
+- A history of falls is a risk factor, but it is not the same as a current fall event.
+- Mentions of fall prevention, fall precautions, or unrelated uses of the word "fall" should not be treated as current fall events.
+- If the note contains only limited evidence, keep the explanation cautious and simple.
+
+Risk level definitions:
+- High: recent or recurrent falls are documented, or multiple strong fall-risk indicators are documented, or serious mobility or safety concerns are documented
+- Moderate: one or more fall-risk indicators are documented, but severe or multiple high-risk features are not clearly documented
+- Low: little or no clear fall-risk evidence is documented
+
+Explanation requirements:
+- Write 2 to 4 short sentences.
+- Explain the risk level in a way a patient or family member can easily understand.
+- Clearly connect the explanation to the documented evidence.
+- Use "you" and "your".
+- Focus on the main reasons for the risk level.
+- Do not repeat the JSON field names.
+- Do not sound like a medical report.
+- If uncertainty matters, mention it briefly and simply.
+
+Recommended actions requirements:
+- Write 3 to 5 short, practical, patient-friendly actions.
+- Each action should be easy to understand and realistic to follow.
+- Focus on safe movement, fall prevention, support, awareness, and practical daily safety.
+- Use everyday wording.
+- Write directly to the patient using "you" when natural.
+- Do not include medications, tests, referrals, procedures, or treatment plans unless explicitly documented.
+- Do not include vague advice like "follow medical advice" unless clearly supported by the note.
+- Prefer practical wording such as:
+  - Take your time when standing up.
+  - Use support if you feel unsteady.
+  - Keep walkways clear and well lit.
+  - Ask for help if you feel unsafe when walking.
+These examples are style guidance only. Do not copy them unless they fit the note.
+
+Uncertainty note requirements:
+- If the note is missing important details, briefly say what is unclear.
+- If there is no important uncertainty, write "none".
+
+Return valid JSON only. Do not include markdown. Do not include any text before or after the JSON.
+
+Required JSON schema:
+{
+  "risk_level": "Low | Moderate | High",
+  "evidence": [
+    ""
+  ],
+  "risk_factor_presence": {
+    "recent_fall": "yes | no | not stated",
+    "recurrent_falls": "yes | no | not stated",
+    "mobility_or_balance_impairment": "yes | no | not stated",
+    "dizziness_or_syncope": "yes | no | not stated",
+    "cognitive_impairment_or_confusion": "yes | no | not stated",
+    "sedative_or_psychoactive_medication": "yes | no | not stated",
+    "frailty_or_weakness": "yes | no | not stated",
+    "walking_aid_or_mobility_assistance": "yes | no | not stated",
+    "functional_or_environmental_safety_concerns": "yes | no | not stated"
+  },
+  "main_risk_factors": [
+    ""
+  ],
+  "explanation": "",
+  "recommended_actions": [
+    ""
+  ],
+  "uncertainty_note": ""
+}
+
+Clinical note:
+{{clinical_note}}
+`,
+
+};
+
+    // 2) 额外的 prompt 展示信息单独放这里
+    const PROMPT_META = {
+      v1: { name: "v1" },
+      v2: { name: "v2" },
+      v3: { name: "v3" },
+      v4: { name: "v4" },
+      v5: { name: "v5" },
+      v6: { name: "v6" },
+      v7: { name: "v7" },
+      v8: { name: "v8" },
+      v9: { name: "v9" },
+      v10: { name: "v10" }
+    };
+
+    // 3) cases 保持数组格式
+    const cases = [
+  {
+    "id": "case1",
+    "title": "Case 01",
+
+    "text": "clinical_text: \nName:  ___                 Unit No:   ___\n \nAdmission Date:  ___              Discharge Date:   ___\n \nDate of Birth:  ___             Sex:   F\n \nService: SURGERY\n \nAllergies: \nPenicillins / Aspirin / Ibuprofen / Prevpac / Betadine Viscous \nGauze / adhesive / Tamiflu / lisinopril / prednisone / \nfamotidine / diazepam / chlorhexidine\n \nAttending: ___.\n \nChief Complaint:\nmultinodular goiter\n \nMajor Surgical or Invasive Procedure:\ntotal thyroidectomy\n \nHistory of Present Illness:\nThis patient is a ___ year old female who was diagnosed with MNG \nback in ___. She said that she was out to lunch with a \nfriend,when the friend noticed a lump on her neck. She went into \nthe doctor and was diagnosed with MNG after examination and \nultrasound. She received two FNA in ___, one in ___ which were \nbenign. A ___ US showed no interval changes in her nodules. In \n___, she started feeling a choking sensation that would come on \nwithout warning. They were not necessarily associated with \neating. \n\nMore recently, she has noticed increase in the size of her right \nthyroid nodule. She notes that she has worsened coughing and \nchoking sensation recently. She has noticed voice \nchanges,especially after continued coughing. She endorses \ndysphagia, odynophagia, difficulty breathing at night while \nlaying on her right side. \n\nShe denies any overt symptoms of hyper or hypothyroidism. \n\n \nPast Medical History:\nPMH:\n-anemia\n-anxiety\n-back pain\n-colon polyps\n-HTN\n\n \nSocial History:\n___\nFamily History:\norphan-family history not available \n\n \nPhysical Exam:\nGEN: AOx3 WN, WD in NAD\nHEENT: NCAT, EOMI, anicteric, mild bruising around incision, no \nswelling\nCV: RRR\nPULM: unlabored breathing with symmetric chest rise, no\nrespiratory distress\nABD: soft, NT, ND, no mass, no hernia\nEXT: WWP, no CCE, no tenderness, 2+ B/L ___\n\n \nPertinent Results:\n___ 09:12AM BLOOD Calcium-9.1\n___ 03:36PM BLOOD Calcium-9.1\n___ 09:12AM BLOOD ___-36\n___ 03:36PM BLOOD ___ F with HTN & symptomatic multinodular goiter s/p total \nthyroidectomy. She tolerated the procedure without complication. \nRefer to operative report dictated separately. She was brought \nto the PACU for close monitoring before being transferred to the \nfloor for continued observation. \n\nPostoperatively she had nausea and dizziness, which improved \nwith antiemetics. She reports mild pain around incision, but no \ndifficulty breathing, difficulty speaking or swallowing. \nPOD #0, Ca 9.1, PTH 33. Patient reported mild tongue tingling on \nPOD #1,Ca 9.1, PTH 36. In the afternoon her symptoms had \nresolved. She did not experience any difficulty breathing or \nsensation of swelling in the neck. \n\nPOD #1 Patient pain was well controlled, she was tolerating a \ndiet, and voiding independently, and ambulating without \nconcern.She was discharged home with follow-up instructions and \nverbalized good understanding.\n \nMedications on Admission:\nCLONAZEPAM - clonazepam 0.5 mg tablet. 1 Tablet(s) by mouth at\nbedtime use sparingly\n\nRANITIDINE HCL [ZANTAC] - Zantac 150 mg tablet. 1 tablet(s) by\nmouth PRN\n\n \nDischarge Medications:\n1.  Acetaminophen 1000 mg PO Q8H Duration: 36 Hours  \n2.  Calcium Carbonate 1000 mg PO TID:PRN tingling or numbness \nPlease purchase TUMS over the counter and take if you have \nsymptoms.  \n3.  Levothyroxine Sodium 100 mcg PO DAILY \nRX *levothyroxine 100 mcg 1 tablet(s) by mouth once a day Disp \n#*30 Tablet Refills:*3 \n\n \nDischarge Disposition:\nHome\n \nDischarge Diagnosis:\nmultinodular goiter\n\n \nDischarge Condition:\nMental Status: Clear and coherent.\nLevel of Consciousness: Alert and interactive.\nActivity Status: Ambulatory - Independent.\n\n \nDischarge Instructions:\nYou were admitted to ___ overnight for observation following \nyour surgery. You did well postoperatively and were discharged \nhome once you were eating, on oral medications, walking, and \ncompleting daily activities per normal. \nMedications: You were started on thyroid hormone medication,take \nas prescribed. For pain medication you may take acetaminophen \n(Tylenol) as directed.\n\nYour calcium level is normal at discharge and no calcium \nsupplement is needed. However if you develop tingling or \nnumbness around your mouth or fingertips this may be a sign of a \nlow calcium and you should take Tums 2 tablets three times a day \nand call our office.  If you develop severe symptoms, please go \nto emergency room.\n\nWound care: You may shower normally. Allow warm soapy water to \nrun over the wound, rinse and pat dry gently. There is no need \nto keep a dressing over the wound. Do not apply creams or \nointments. Do not submerge the wound in a swimming pool or bath \nuntil cleared at your follow up visit. Do  not pull off the \nsteri strip tapes--these will fall off by themselves over the \nnext ___ weeks.\n\nDiet:\nYou may resume your regular home diet without restriction. You \nshould use stick to foods that do not upset your stomach. You \nmay need to start with small meals first and may not feel very \nhungry at first. This will improve over time. You may supplement \nyour diet with protein shakes as needed if you do not feel you \nare taking in enough nutrition.\n\nActivity:\nYou may resume all of your normal home activities, except for \nstraining or lifting heavy weight. We recommend you resume \nwalking, exercise, bathing, per your normal regimen. \n\nWarning signs:\nYou should contact our clinic or return to the ED immediately if \nyou experience any of the following signs or symptoms:\nFever above 101.5\nWorsening pain\nWorsening GI upset, nausea/vomiting, diarrhea\nChange in the appearance of your incision, or redness, swelling, \n\nor change in drainage from your incision\nAny other symptoms that concern you\n\nYou can contact our clinic at any time with questions or \nconcerns. You should be seen in our clinic for follow up \nfollowing your discharge from the hospital. \n\nBest wishes,\nYour ___ Care Team\n\n \nFollowup Instructions:\n___\n"
+  },
+  {
+    "id": "case2",
+    "title": "Case 02",
+    "text":"clinical_text \nName:  ___.              Unit No:   ___\n \nAdmission Date:  ___              Discharge Date:   ___\n \nDate of Birth:  ___             Sex:   M\n \nService: MEDICINE\n \nAllergies: \nNo Known Allergies / Adverse Drug Reactions\n \nAttending: ___.\n \nChief Complaint:\nSyncope\n\n \nMajor Surgical or Invasive Procedure:\nNone\n\n \nHistory of Present Illness:\n___ man with PMH of HTN presents following syncopal \nepisode this afternoon.\n\nPatient reports several days of URI symptoms including \ncongestion, rhinitis, cough, and subjective fevers. He felt \npoorly from ___ through today, but reports fair appetite, no \nHA, no N/V/D, and no dysuria. He went to the ___ store today \nwhen he suddenly passed out. He does not recall the events of \npassing out  and only remembers waking up in the ambulance. He \ndoes deny CP, SOB, or palpitations preceeding syncope. No \nincontinence or tongue biting. He denies confusion on waking, \nbut was reportedly AAOx2 on awakening. \n\nIn the ED, initial vitals were T 96.4, HR 88, BP 152/102, RR 16, \nO2 97%RA. Initial exam was notable for alert man oriented only \nto self and place (not year). He had no apparent neurologic \ndeficits. Initial labs were notable for WBC 8.7, HCT 40.8, and \nCr 1.8. Trop negative x1 and INR was 1.1. CT of head and C-spine \nshowed no acute process. CXR showed moderate to severe \ncardiomegaly, but no other process. EKG showed no acute ischemic \nchanges, but was concerning for Afib. He was given 1LNS and \nadmitted to medicine for further management. VS prior to \ntransfer were 98.1, HR 89, BP 144/76, RR 20, O2 98%RA.\n\nCurrently, patient is without complaint. He does report some DOE \nover the last 6 months.\n  \nROS: per HPI, denies fever, chills, night sweats, headache, \nvision changes, rhinorrhea, congestion, sore throat, cough, \nshortness of breath, chest pain, abdominal pain, nausea, \nvomiting, diarrhea, constipation, BRBPR, melena, hematochezia, \ndysuria, hematuria.  \n\n \nPast Medical History:\n- Degenerative joint disease\n- HTN\n- ?Afib - Identified on insurance physical. PCP does not believe \nhe has Afib, but instead has WAP.\n- Hypercholesterolemia\n- Insomnia\n- Anxiety\n- Seasonal allergies\n- Erectile dysfunction\n- Cataracts\n- Bladder carcinoma\n \nSocial History:\n___\nFamily History:\nFather with PUD. No known CAD or SCD.\n\n \nPhysical Exam:\nADMISSION:\nVS: 98.4 132/82 87 16 100%RA\nGeneral: Well appearing man in NAD. Pleasant\nHEENT: Dry MM   \nNeck: JVD not elevated\nCV:  Irregularly irregular rhythm. Distant heart sounds, no \nmurmur appreciated\nLungs: Good air movment, nonlabored, CTAB\nAbdomen: Soft, NT, ND. NABS. No HSM\nGU: Deferred\nExt:  No edema\nNeuro: AAOx3, appropriate, pleasant. CNIII-XII intact. Moving \nall extremities equally\nSkin: No rashes or lesions noted\n\nDISCHARGE:\nVITALS: 98.4 97.9 132/82 80 16 96%RA\nI/O: 1180/200++\nGENERAL: Appears in no acute distress. Alert and interactive. \nWell nourished appearing.\nHEENT: Normocephalic, atraumatic. EOMI. Nares clear. Dry mucous \nmembranes moist without plaques or exudates. Good dentition.\nNECK: supple without lymphadenopathy. JVP not elevated. Thyroid \nbarely palpable.\n___: Distant heart sounds. Irregular rate and rhythm, without \nmurmurs, rubs or gallops. S1 and S2 normal.\nRESP: Clear to auscultation bilaterally without adventitious \nsounds. No wheezing, rhonchi or crackles. Stable inspiratory \neffort without labored breathing.\nABD: soft, non-tender, non-distended, with normoactive bowel \nsounds. No palpable masses or peritoneal signs. No significant \nabdominal scars.\nEXTR: no cyanosis, clubbing or edema, 2+ peripheral pulses\nNEURO: Alert and oriented x 3. Strength ___ bilaterally, \nsensation grossly intact. Gait deferred.\n\n \nPertinent Results:\nADMISSION LABS:\n\n___ 02:50PM BLOOD WBC-8.7 RBC-4.23* Hgb-13.8* Hct-40.6 \nMCV-96 MCH-32.7* MCHC-34.0 RDW-13.3 Plt ___\n___ 02:50PM BLOOD Neuts-76.8* Lymphs-14.6* Monos-7.8 \nEos-0.3 Baso-0.4\n___ 02:50PM BLOOD ___ PTT-32.2 ___\n___ 02:50PM BLOOD Glucose-172* UreaN-13 Creat-1.8* Na-138 \nK-4.0 Cl-101 HCO3-25 AnGap-16\n___ 02:50PM BLOOD cTropnT-<0.01\n___ 09:20PM BLOOD cTropnT-<0.01\n___ 02:50PM BLOOD Calcium-9.5 Phos-3.7 Mg-1.9\n___ 09:20PM BLOOD TSH-1.3\n\nDISCHARGE LABS:\n\n___ 07:15AM BLOOD WBC-6.4 RBC-4.01* Hgb-13.1* Hct-39.0* \nMCV-97 MCH-32.6* MCHC-33.5 RDW-13.6 Plt ___\n___ 07:15AM BLOOD Plt ___\n___ 07:15AM BLOOD Glucose-138* UreaN-12 Creat-1.1 Na-139 \nK-3.7 Cl-104 HCO3-21* AnGap-18\n\nMICROBIOLOGY:\n\nIMAGING:\n___ 3:___-SPINE W/O CONTRAST\nThere is no acute fracture or malalignment.  Prevertebral soft \ntissues are unremarkable.  Multilevel degenerative changes are \nseen with findings compatible with diffuse idiopathic skeletal \nhyperostosis. There is no critical canal stenosis with bilateral \nfacet arthropathy resulting in multilevel mild to moderate \nneural foraminal narrowing.  The soft tissues of neck including \nthyroid gland are unremarkable.  Imaged lung apices demonstrate \nmild paraseptal emphysema. \n\n___ 3:13 CT HEAD W/O CONTRAST\nThere is no acute intracranial hemorrhage, edema, mass effect or \n\nmajor vascular territorial infarction. There is no shift of the \nmidline structures. Ventricles and sulci are enlarged compatible \nwith age related atrophy. Periventricular and subcortical white \nmatter hypodensities suggest chronic small-vessel ischemic \ndisease. There is no fracture. Imaged paranasal sinuses and \nmastoid air cells reveal minimal bilateral anterior ethmoid and \nright maxillary sinus mucosal thickening. Small left frontal \nsinus osteoma is noted. \n\n___ 3:18 ___ CHEST (SINGLE VIEW)\nModerate to severe cardiomegaly is present.  The aorta is \nunfolded.  There is mild pulmonary vascular fullness which may \nbe due to supine positioning and low lung volumes.  No overt \npulmonary edema is seen.  There is no focal consolidation or \npleural effusion.  No pneumothorax is identified.  No acute \nosseous abnormalities are demonstrated. \n \n___ TTE\nMild symmetric left ventricular hypertrophy with preserved \nregional and global biventricular systolic function. Dilated \nascending aorta. No structural cardiac cause of syncope \nidentified.\n\n \nBrief Hospital Course:\n___ male status post a syncopal episode with loss of \nconsciousness while in ___ store earlier this afternoon and \nsruck his head. \n   \n# Syncope: Given the history of recent illness several days \nprior to this episode, coupled with poor PO intake it is likely \nhis syncope was due to hypovolemia (orthostatic syncope). The \npossibility of hypovolemia was supported by his elevated \ncreatinine. Other considerations would be a cardiac etiology \nsuch as Arrhythmia. His EKG was suggestive of Atrial \nfibrillation, although the patient denied any history of such. \nAtrial fibrillation is further supported by history of dyspnea \non exertion. A vasovagal episode in the setting of not eating is \nalso possible. This was unlikely since there was no specific \ntrigger prior to his syncopizing. ACS was possible although \nunlikely given lack of evidence on EKG and history. He was \nmaintained on IV hydration, telemetry monitoring and got a TTE \nthat showed  mild symmetric left ventricular hypertrophy with \npreserved regional and global biventricular systolic function. \nDilated ascending aorta. No structural cardiac cause of syncope \nidentified.\n\n# Cough: He reported some rhinitis, subjective fevers and \nfatigue, all of which suggested viral illnes. Given that he is \nmproving and looks clinical we held off on antibiotics at this \npoint.\n\n___: He had elevated creat which could be explained by his \nrecent illness and poor PO intake. The presentation was very \nsuggestive of a pre-renal ___. However, we did not have his \nbaseline renal function making it difficult to assess if this \nwas an acute or chronic insult. Perhaps, he has some chronic \nintrinsic renal dysfunction. hence he was maintained on IV \nhydration with improvement in creatinine.\n\n# HTN: Continue Amlodipine and Losartan once doses have been \nverified with the PCP.\n\n# Insomnia: Held ambien given fall risk and gave trazodone.\n\nTRANSITION OF CARE:\nPatient admitted for syncope. He was not orthostatic on \nadmission, and had was ruled out for MI. No events on telemetry \novernight, and TTE showed LVH, but no other structural heart \ndisease. There was concern for atrial fibrillation on EKG, which \nmay warrant further management. Did start the patient on full \ndose ASA for primary prevention of CAD and possible stroke \nprevention given concern for AFib. Risks and benefits of \nanticoagulation should be discussed with the patient.\n1. Could consider Holter monitoring for syncope\n2. The patient has several risk factors for cardiac disease \ntherefore stress testing may be warranted if none has been done \nrecently.\n3. The patient consumes a significant amount of alcohol. he did \nnot show any signs of withdrawal during this admission, but \nalcohol cessation and monitoring would recommended.\n\n \nMedications on Admission:\nThe Preadmission Medication list is accurate and complete.\n1. Pravastatin 20 mg PO DAILY \n2. Losartan Potassium 100 mg PO DAILY \n3. Amlodipine 10 mg PO DAILY \n4. Bromphenex DM *NF* (brompheniramine-pseudoeph-DM) ___ \nmg/5 mL Oral unknown \n5. Zolpidem Tartrate 10 mg PO HS:PRN insomnia \n\n \nDischarge Medications:\n1. Amlodipine 10 mg PO DAILY \n2. Losartan Potassium 100 mg PO DAILY \n3. Pravastatin 20 mg PO DAILY \n4. Bromphenex DM *NF* (brompheniramine-pseudoeph-DM) ___ \nmg/5 mL Oral unknown \n5. Zolpidem Tartrate 10 mg PO HS:PRN insomnia \n6. Aspirin 325 mg PO DAILY \nRX *aspirin 325 mg 1 tablet(s) by mouth daily Disp #*30 Tablet \nRefills:*0\n\n \nDischarge Disposition:\nHome\n \nDischarge Diagnosis:\nPRIMARY DIAGNOSIS\n1. Syncope\n2. Acute kidney injury\n3. Hypovolemia\n4. Atrial fibrillation\n\n \nDischarge Condition:\nMental Status: Clear and coherent.\nLevel of Consciousness: Alert and interactive.\nActivity Status: Ambulatory - Independent.\n\n \nDischarge Instructions:\nYou were admitted to the Internal Medicine service at ___ \n___ on ___ 7 regarding management \nof your syncope. Based on the history given and the testing done \nwe do not think there was a dangerous cause to your sycnope, but \nit is very important that you followup with your PCP. Most \nlikely, you syncope may have been caused by dehydration, or \nreflexive syncope from coughing due to your recent cold.  We \nmanaged you with fluid hydration overnight with good response in \nyour blood pressure. EKG testing suggests that you may have \natrial fibrillation. We also did an ultrasound of your heart, \nwhich showed enlargement of the muscle, likely due to \nlongstanding high blood pressure.  We recommend further \ndiscussion and follow-up with your primary provider concerning \nthe possible atrial fibrilation and following up with a \ncardiologist. We started you on aspirin to help protect your \nheart.\n \nIt is important to take all of your medications as prescribed. \nIn addition, please make every attempt to attend your follow-up \nappointments, as scheduled. \n \nPlease call your doctor or go to the emergency department if:\n* You experience new chest pain, pressure, squeezing or \ntightness.\n* You develop new or worsening cough, shortness of breath, or \nwheezing.\n* You are vomiting and cannot keep down fluids, or your \nmedications.\n* If you are getting dehydrated due to continued vomiting, \ndiarrhea, or other reasons. Signs of dehydration include: dry \nmouth, rapid heartbeat, or feeling dizzy or faint when standing.\n* You see blood or dark/black material when you vomit, or have a \nbowel movement.\n* You experience burning when you urinate, have blood in your \nurine, or experience an unusual discharge.\n* Your pain is not improving within 12 hours or is not under \ncontrol within 24 hours.\n* Your pain worsens or changes location.\n* You have shaking chills, or fever greater than 101.5 degrees \nFahrenheit or 38 degrees Celsius.\n* You develop any other concerning symptoms.\n\n \nFollowup Instructions:\n___\n"
+  },
+  {
+    "id": "case3",
+    "title": "Case 03",
+
+
+    "text": "clinical_text: \nName:  ___                  Unit No:   ___\n \nAdmission Date:  ___              Discharge Date:   ___\n \nDate of Birth:  ___             Sex:   F\n \nService: MEDICINE\n \nAllergies: \nvancomycin\n \nAttending: ___\n \nChief Complaint:\nDKA, Transfer from outside hospital\n \nMajor Surgical or Invasive Procedure:\n___: Right midline catheter placed\n \nHistory of Present Illness:\nMs. ___ is a ___ year old woman with history of DM1 w/ \nnumerous DKA admissions (most recently ___, necrobiosis \nlipoidica diabeticorum, and hypothyroidism, who presents from \nOSH ED as transfer for DKA. \n\nPatient with recent bilateral ___ ulcer superinfection that was \ntreated with an oral course of clindamycin (___ompleted on ___. She was in her usual state of health with \nusual FSGs (high 100s to low 200s) until night prior to \nadmission when she noticed new throbbing pain in RLE wound site \nwhile at work.  She left work early due to pain and checked her \nglucose at home (200s) and then went to sleep. Awoke in AM with \nn/v, sugars in the 300s and so presented to ___. At \n___ she was found to have sugars up to 700s, bicarb of 15, \nAG of 15, and positive urine ketones. Bolused 1L and started on \ninsulin drip at 6U/hr. Sugars quickly normalized to 200s and \ndrip was stopped before transfer. Unclear why drip was stopped.  \nShe was transferred to ___ per patient request.\n\nIn the ED, she continued to have RLE pain, also reporting chest \npain and some SOB. Tachy to 120s. FSG 241 on arrival, but not on \ninsulin.\n\nOf note patient admitted to ICU at ___ ___ for DKA. She \nwas treated with IV insulin gtt, transitioned to her home \nregimen without issues, and ___ was consulted. Hospital \ncourse was complicated by necrobiosis lipoidia diabeticorum with \nsuperinfection of ulceration, which was treated with a 10 day \ncourse of clindamycin. She also had chest pain during admission, \nreproducible on exam consistent with costochontritis and her \nchest pain improved with magic mouthwash. \n\nIn the ED, initial vitals:  \n97.4 120 114/75 20 96% RA \n \n- Exam notable for tearful woman, tearful at times. Reproducible \nsternal pain to palpation. Bilateral wounds overlying tibias. \nRight shin is warmer with more edema. Surrounding erythema \nbilaterally.\n\n- Labs were notable for:  normal CBC, MCV 109, Na 131, Bicarb \n12, K 5.5, glucose 343 pH 7.22, UA with ketones, few bacteria, \nneg Leuks and nitrites, lactate 3.1\n\n- Imaging: no imaging performed\n\n- Patient was given: \n3L NS\nASA 325mg\nIV clinda, cipro, flagyl\nInsulin gtt\nZofran \nD5NS +40mEQ K at 250cc/hr\n25G dextrose \n \nOn arrival to the MICU, patient is tearful, complaining of pain \nin her R leg.  Patient states she has been compliant with her \ninsulin regimen since last discharge on ___.  She denies \nfevers, chills, cough, chest pain, SOB, nausea/vomiting, \ndiarrhea, dysuria, headache.   \n \nPast Medical History:\n- Type 1 Diabetes Mellitus  \n- GERD  \n- Gastroparesis  \n- Pyloric stenosis as infant  \n- Hypothyroidism  \n- Necrobiosis Lipoidica Diabeticorum \n\n \nSocial History:\n___\nFamily History:\n- no first degree relatives with T1DM or autoimmune disease \n \nPhysical Exam:\nADMISSION PHYSICAL EXAM\n=======================\nVitals: 98.4 88 112/68 100% RA\nGENERAL: NAD, tearful, holding her head in her hand, eyes closed \n\nHEENT: PERRL no scleral icterus, no conjunctival pallor, MMM\nNECK: supple\nLUNGS: CTABL\nCV: RRR -m/r/g\nABD: soft nt nd normoactive BS\nEXT: B/l ulcerations of the shin R>L; R leg ulceration \nsurrounded by erythema, no purulent drainage; B/L shins warm \nsurrounding ulcerations\nSKIN: no other rashes or lesions 2+DP b/l  \nNEURO: AAOX3, no focal defects noted, moving all extremities \nspontaneously \nACCESS: PIV\n\nDISCHARGE PHYSICAL EXAM\n=======================\nVitals:  98.2, 95/60, 80, 18, 100% on RA\nGeneral: alert, oriented, lying in bed no acute distress,\nyelling/screaming/crying during this encounter\nHEENT: sclera anicteric, MMM, oropharynx clear  \nNeck: supple, JVP not elevated, no LAD  \nLungs: clear to auscultation bilaterally, no wheezes, rales,\nronchi  \nCV: regular rate and rhythm, normal S1 + S2, no murmurs, rubs,\ngallops  \nAbdomen: soft, non-tender, non-distended, bowel sounds present,\nno rebound tenderness or guarding, no organomegaly  \nGU: no foley  \nExt: BLE with dressings c/d/I, no appreciable pitting edema of\nBLE  \nNeuro: AOx3, no focal deficits, moving all extremities\nspontaneously\nDerm: deferred given new dressing changes\nPsych: angry and tearful\n\n \nPertinent Results:\nADMISSION LABS\n=====================\n___ 10:45AM BLOOD WBC-8.4# RBC-3.41* Hgb-12.2 Hct-37.2 \nMCV-109* MCH-35.8* MCHC-32.8 RDW-13.2 RDWSD-53.1* Plt ___\n___ 10:45AM BLOOD Neuts-72.7* Lymphs-17.6* Monos-8.6 \nEos-0.0* Baso-0.7 Im ___ AbsNeut-6.10 AbsLymp-1.48 \nAbsMono-0.72 AbsEos-0.00* AbsBaso-0.06\n___ 10:45AM BLOOD Glucose-343* UreaN-14 Creat-1.1 Na-131* \nK-5.5* Cl-98 HCO3-12* AnGap-27*\n___ 12:35AM BLOOD Calcium-7.2* Phos-2.4* Mg-1.5*\n___ 08:00AM BLOOD ALT-17 AST-21 CK(CPK)-48 AlkPhos-89 \nTotBili-0.2\n___ 11:43AM BLOOD ASA-NEG Acetmnp-7* Bnzodzp-NEG \nBarbitr-NEG Tricycl-NEG\n___ 12:13PM BLOOD ___ pO2-58* pCO2-25* pH-7.22* \ncalTCO2-11* Base XS--15\n___ 12:41AM BLOOD Lactate-3.1*\n___ 12:13PM BLOOD O2 Sat-84\n\nMICROBIOLOGY\n======================\n___ Blood Culture: negative\n\n___ Wound Culture: R shin\n                          **FINAL REPORT ___\n\n   WOUND CULTURE (Final ___: \n      STAPH AUREUS COAG +.    SPARSE GROWTH. \n         Staphylococcus species may develop resistance during \nprolonged\n         therapy with quinolones.   Therefore, isolates that are \ninitially\n         susceptible may become resistant within three to four \ndays after\n         initiation of therapy.  Testing of repeat isolates may \nbe\n         warranted. \n         This isolate is presumed to be resistant to clindamycin \nbased on\n         the detection of inducible resistance . \n\n                              SENSITIVITIES: MIC expressed in \nMCG/ML\n                      \n_________________________________________________________\n                             STAPH AUREUS COAG +\n                             |   \nCLINDAMYCIN-----------       R\nERYTHROMYCIN----------   =>8 R\nGENTAMICIN------------ <=0.5 S\nLEVOFLOXACIN----------  0.25 S\nOXACILLIN-------------   0.5 S\nTETRACYCLINE----------   <=1 S\nTRIMETHOPRIM/SULFA---- <=0.5 S\n\nIMAGING/STUDIES\n=====================\nAdmission EKG: sinus tachycardia 117, normal axis, QTc 481, no \nST changes \n\n___ MRI R Calf: Wet read --> There is skin thickening and \nirregularity and subcutaneous edema along the upper calf most \nprominent anteromedially (03:14) compatible with clinical \nconcern of cellulitis. The underlying osseous structures appear \nnormal. Bone marrow signal is normal without bone marrow edema. \nThere is no evidence of osteomyelitis. Muscle signal and bulk in \nbilateral calves is normal. \n\nDISCHARGE LABS\n==============\n___ 06:19AM BLOOD WBC-4.8 RBC-3.16* Hgb-11.3 Hct-33.0* \nMCV-104* MCH-35.8* MCHC-34.2 RDW-13.2 RDWSD-50.6* Plt ___\n___ 04:53AM BLOOD Neuts-43.8 ___ Monos-5.2 Eos-2.0 \nBaso-0.3 Im ___ AbsNeut-1.53* AbsLymp-1.69 AbsMono-0.18* \nAbsEos-0.07 AbsBaso-0.01\n___ 06:19AM BLOOD Glucose-335* UreaN-8 Creat-0.8 Na-136 \nK-4.3 Cl-100 HCO3-24 AnGap-16\n___ 06:19AM BLOOD Calcium-8.7 Phos-4.5 Mg-1.___ with PMH of DM1 w/ numerous ___ admissions (most recently \n___, necrobiosis lipoidica diabeticorum, and \nhypothyroidism, who presented from ___ to the FICU \nwith DKA. \n\n#DKA: Resolved.  Presented with elevated anion gap, ketones in \nthe urine, and elevated blood glucose. She was subsequently \nstarted on an insulin drip and transitioned to SC insulin once \nAG closed x 2 and tolerating PO.   Pt was stable for discharge \nfrom the ICU on ___ to the floors.  ___ was consulted during \nthis admssion and recommended the following discharge insulin \nregimen: Lantus 10u qam, 12u qhs.\n\n___: Creatinine was 1.1 on admission (baseline was 0.6), which \nresolved after rehydration. \n\n# Necrobiosis lipoidica diabeticorum\n# BLE pain\n# RLE cellulitis: ___ necrobiosis lipoidica diabeticorum \nsuperinfection.  Ulcer cx growing staph res to clinda.  Of note, \npt is s/p 10 day course of clinda (ended ___ for superinfection \nof ulcerations.  MRI ___ + cellulitis.  She was initially \nplaced on nafcillin and was transitioned to Bactrim to complete \na total 10 day course (last day on ___.  Her reported pain \nseemed very much out of proportion to her exam and inconsistent \nwith her demonstrated behaviors (seen by nursing being able to \nambulate in her room and to bathroom without difficulty, \ninconsistent reactions during daily dressing changes).  Per her \nmedical team, Dermatology, and nursing, there was concern that \nher disproportional pain to her clinical exam was potentially \nexacerbated by her underlying personality disorder/factitious \ndisorder and behavioral problems.  We were concerned that her \npain may be related to progression of her NLD.  The patient had \npreviously declined all treatments (all outpatient) offered by \nDermatology during this admission for specific treatment for her \nNLD, but she was finally amenable to try topical tacrolimus (not \navailable in inpatient formulary, but patient was provided a \nprescription at discharge). Of note, because of her significant \nhistory of medical noncompliance, behavioral issues, and recent \ninfection, dermatology would be hesitant to start any systemic \nimmune-modulating treatments at this time.  Patient to follow-up \nwith outpatient dermatologist, Dr. ___, at ___ \n___ (appointment on ___.  She was continued on her home \ndose pentoxifylline.\n\nOf note, although the patient endorsed severe pain and reported \nthat she was unable to ambulate, she had reported to nursing \nstaff and had been observed to be ambulating in her room and to \nand from her bathroom without difficulty.  She endorsed safety \nconcerns at home regarding her fall risk and initially declined \nour offer of ___ evaluation.  ___ did evaluate the patient and \ncleared her to go home; the patient declined any assistive \ndevice.  \n\n#Elevated Lactate: Pt had an elevated lactate during admission \nwhich downtrended prior to discharge from the ICU.  No signs or \nsymptoms of hypoperfusion.  The etiology of her elevated lactate \nwas felt to be due to hypovolemia and DKA.  \n\n#Gastroparesis: The patient has a history of gastroparesis \nsecondary to T1DM. Initially, her home erythromycin was held on \nadmission to ICU as drug interaction was noted with clindamycin \n(decreased effectiveness of both agents).  However, erythromycin \nwas restarted on ___.\n\n#GERD: The patient continued on oral PPI during admission.\n\n# Communication: per chart, Mother ___ ___ \n# Code: Full\n\n***TRANSITIONAL ISSUES***\n- Patient to finish Bactrim course on ___ \n- Wound care recs: OK to continue Adaptic, ABD pad and Kerlix \n- New insulin regimen per ___: Lantus 10u qam, 12u qhs\n- Recommended initiation of topical tacrolimus daily if \ntolerated\n- Patient was evaluated by ___ but declined any treatments or \nassistive devices\n\n \nMedications on Admission:\nThe Preadmission Medication list is accurate and complete.\n1. Erythromycin 250 mg PO Q8H \n2. Levothyroxine Sodium 50 mcg PO DAILY \n3. Omeprazole 40 mg PO BID \n4. Pentoxifylline 800 mg PO TID with meals \n5. Acetaminophen 1000 mg PO Q6H:PRN Pain - Mild \n6. Naproxen 500 mg PO Q12H:PRN Pain - Moderate \n7. Glargine 10 Units Breakfast\nGlargine 10 Units Bedtime\n\n \nDischarge Medications:\n1.  Gabapentin 800 mg PO TID \nRX *gabapentin 800 mg 1 tablet(s) by mouth three times a day \nDisp #*21 Tablet Refills:*0 \n2.  Sulfameth/Trimethoprim DS 1 TAB PO BID \nRX *sulfamethoxazole-trimethoprim [Bactrim DS] 800 mg-160 mg 1 \ntablet(s) by mouth twice a day Disp #*7 Tablet Refills:*0 \n3.  Tacrolimus 0.03 % TOPICAL DAILY \nRX *tacrolimus 0.03 % apply to wounds daily Refills:*0 \n4.  TraMADol 50 mg PO Q6H:PRN Pain - Moderate \nDo not take while operating machinery or with alcohol. \nRX *tramadol 50 mg 1 tablet(s) by mouth every six (6) hours Disp \n#*28 Tablet Refills:*0 \n5.  Glargine 10 Units Breakfast\nGlargine 12 Units Bedtime \n6.  Acetaminophen 1000 mg PO Q6H:PRN Pain - Mild  \n7.  Erythromycin 250 mg PO Q8H  \n8.  Levothyroxine Sodium 50 mcg PO DAILY  \n9.  Naproxen 500 mg PO Q12H:PRN Pain - Moderate  \n10.  Omeprazole 40 mg PO BID  \n11.  Pentoxifylline 800 mg PO TID with meals  \n\n \nDischarge Disposition:\nHome\n \nDischarge Diagnosis:\ndiabetic ketoacidosis\nnecrobiosis lipoidica diabeticorum\ncellulitis\n\n \nDischarge Condition:\nMental Status: Clear and coherent.\nLevel of Consciousness: Alert and interactive.\nActivity Status: Ambulatory - Independent.\n\n \nDischarge Instructions:\nDear Ms. ___,\n\nYou were admitted to the ___ \nfor diabetic ketoacidosis and infection of your right leg \nwounds.  You were treated with insulin infusion and your blood \nsugar control improved.  You were evaluated by the ___ \n___ who titrated your home insulin regimen.  For your \ninfection, you will be discharged to complete a course of oral \nantibiotics.\n\nFor your skin wounds, you had an MRI which showed inflammation \nassociated with your ulcers.  You were evaluated by Dermatology \nwho provided you numerous options to help treat your necrobiosis \nlipoidica diabeticorum.  Because of your acute infection, it is \nnot ideal/safe to start you on some of these systemic \nimmune-modulating medications.  You can try a topical medication \ncalled topical tacrolimus in the meantime.  These treatments are \ndone in an outpatient basis and Dr. ___ will see you for \nfollow-up.\n\nPlease follow-up with your outpatient providers as instructed \nbelow.\n\nThank you for allowing us to participate in your care.  All best \nwishes for your recovery.\n\nSincerely,\nYour ___ medical team\n \nFollowup Instructions:\n___\n"
+  },
+  {
+    "id": "case4",
+    "title": "Case 04",
+    
+    "text": "clinical_text: \nName:  ___                  Unit No:   ___\n \nAdmission Date:  ___              Discharge Date:   ___\n \nDate of Birth:  ___             Sex:   M\n \nService: MEDICINE\n \nAllergies: \ncitalopram\n \nAttending: ___.\n \nChief Complaint:\nPainless jaundice\n \nMajor Surgical or Invasive Procedure:\n___ - ERCP \n___ - PTBD placement\n___ - PTBD revision, placement \n \nHistory of Present Illness:\nMr ___ is a ___ yo M h/o CHF, HTN depression, COPD, alcoholic \ncirrhosis who presented as transfer from ___) \nfor ERCP. Most of the history is obtained from ___ \nrecords, daughter and sign out since patient is sedated and \nintubated.\n\nPer daughter patient had been jaundiced for >2 weeks and on \n___ family finally managed to convince him to go to the \nhospital. Per daughter he confessed to her he had stopped taking \nhis home meds (unknown length of time). He was initially sent to \n___ and then transferred to ___ \n___.\n\nCOURSE AT ___ PER ___ RECORDS:\n=================================\n- History from ___: When patient presented to \n___, he was found to be markedly jaundiced with \nascites and bilateral pedal edema.  \n- Labs from ___ (see below): Though he was not \nencephalopathic, his labs were notable for mild transaminitis \n(AST>ALT) with coagulopathy and hypoalbuminemia which had not \npreviously been noted.  His bilirubin was markedly elevated at \n33 on presentation.  \n\n- Imaging/procedures from ___: Abdominal CT and MRI were \nperformed.  Both revealed marked intrahepatic ductal dilation \nwithout common bile duct dilation.  No mass lesion was \nidentified.  MRI suggested the location of the obstruction was \nat the confluence of the intrahepatic ducts, raising concern \nabout a cholangiocarcinoma.  His CEA was elevated at 19.3 \nconsistent with an advanced carcinoma.\nHe was also noted to have ascites, which was tapped.  Ascites \nfluid was consistent with portal hypertension with low protein \nlevels.  He had no evidence of SBP with 324 nucleated cells of \nwhich only 8% were polys. Of note, patient had been previously \non diuretics for chronic ascites but had stopped all medications \nseveral months ago  \n\n- Treatment at ___: He was started on vitamin K and after \ndemonstrating some subtle evidence of confusion started also on \nlactulose and rifaximin with good effect.  He was started first \non Ceftriaxone and then transitioned to Zosyn for prophylaxis \nagainst biliary sepsis, though he demonstrated no evidence of \nactive infection.  Patient also received a one time dose of 25% \nalbumin of 100g during the hospitalization. His INR was elevated \non presentation to 2.1 and despite receiving vitamin K rose to \nas high as 3.1.  On the morning of transfer (___), his INR \nwas down to 1.9 after receiving a total of two doses of 5mg of \noral vitamin K.\nHe received one dose of IV Lasix and two doses of oral aldactone \nand diuresed quickly.  His potassium fell in response to the IV \nlasix and was noted to be 2.8 on the morning of transfer \n(___). \n \nPast Medical History:\nCongestive Heart Failure\nCAD s/p CABG in ___\nDepression\nHypertension\nCOPD\nHLD\nSpinal stenosis\nUmbilical hernia\nOSA on CPAP (not using)\nEtOH use \n \nSocial History:\n___\nFamily History:\nFather died of a ruptured aortic aneurysm in ___. Mother with \nh/o colon cancer\n \nPhysical Exam:\nAdmission Physical Exam\n=============================================\nVitals:  BP 129/67, HR 77, RR 19, 100% on 60% FiO2\nGENERAL: Intubated and sedated.\nHEENT: PERRL, Jaundice with scleral icterus\nLUNGS: Intubated, but overall CTAB.\nCV: distant heart sounds, S1 and S2, II/VI systolic murmur \nloudest in RUSB\nABD: Distended, no tenderness, midline epigastric protruding \nhernia (no sign of strangulation)\nEXT: 1+ pitting edema, 2+ DP pulses, extremities are warm\nNEURO: Sedated and intubated  \nACCESS: peripherals\n\nDischarge Physical Exam\n=============================================\nPatient deceased\n \nPertinent Results:\nLab Results on Admission\n========================================\n___ 10:15PM   GLUCOSE-98 UREA N-13 CREAT-1.1 SODIUM-137 \nPOTASSIUM-2.7* CHLORIDE-98 TOTAL CO2-25 ANION GAP-17\n___ 10:15PM   estGFR-Using this\n___ 10:15PM   ALT(SGPT)-61* AST(SGOT)-121* LD(LDH)-291* ALK \nPHOS-417* TOT BILI-31.9*\n___ 10:15PM   ALBUMIN-3.2* CALCIUM-8.7 PHOSPHATE-3.6 \nMAGNESIUM-1.9\n___ 10:15PM   WBC-19.1* RBC-3.70* HGB-11.9* HCT-33.3* \nMCV-90 MCH-32.2* MCHC-35.7 RDW-23.1* RDWSD-76.3*\n___ 10:15PM   NEUTS-90* BANDS-3 LYMPHS-4* MONOS-2* EOS-0 \nBASOS-0 ___ METAS-1* MYELOS-0 AbsNeut-17.76* AbsLymp-0.76* \nAbsMono-0.38 AbsEos-0.00* AbsBaso-0.00*\n___ 10:15PM   HYPOCHROM-1+ ANISOCYT-2+ POIKILOCY-2+ \nMACROCYT-3+ MICROCYT-1+ POLYCHROM-OCCASIONAL \nSPHEROCYT-OCCASIONAL TARGET-2+ SCHISTOCY-OCCASIONAL TEARDROP-1+ \nPAPPENHEI-1+ ENVELOP-1+\n___ 10:15PM   PLT SMR-NORMAL PLT COUNT-218\n___ 10:15PM   ___ PTT-34.3 ___\n\nPertinent Microbiology and Imaging\n==========================================\nCommon Bile Duct Brushings Cytology: Positive for malignancy; \nadenocarcinoma\n\n___ CT CHEST W/O CONTRAST: 1. No definite metastasis in the \nthorax, although limited evaluation. 2. Extensive left lower \nlobe consolidation is likely due to combination of atelectasis \nand pneumonia. 3. Large left and small right pleural effusions. \n4. Moderate pulmonary edema likely secondary to congestive heart \nfailure. 5. Moderate ascites.\n\n___ MRCP: 1. Severe intrahepatic biliary ductal dilation \ninvolving the right and left-sided ducts uniformly with abrupt \ncut off and obstruction at the porta hepatis just beyond the \nconfluence. Although no discrete enhancing mass is noted at the \nsite of obstruction, there is ill-defined T2 hyperintense signal \nabnormality at the porta hepatis. Normal caliber extrahepatic \ncommon duct. These findings raise concern for a malignant \nstricture at the porta hepatis, cholangiocarcinoma being the \ndifferential. 2. The entire liver is diffusely studded with rim \nenhancing lesions measuring up to 3.1 cm in size concerning for \nmetastases. No evidence of cholangitis, given the imaging \nfeatures these are less likely abscesses. 3. The patient has \nknown cirrhosis, there is small volume ascites, portal vein is \npatent, top normal splenic size. 4. Bilateral trace pleural \neffusions and underlying subsegmental atelectasis. 5. There is a \nventral abdominal wall hernia containing a segment of the \ntransverse colon without evidence for obstruction.\n\nLab Results on Discharge\n=======================================\nPatient deceased\n \nBrief Hospital Course:\n___ year old male with systolic CHF, transferred from ___ on \n___ for jaundice, found to have cholangiocarcinoma, course \ncomplicated by ascites of unclear etiology, leukocytosis of \nunclear etiology, now status post ERCP and ___ PTBD placement, \nwith progressive organ failure, made comfort-focused care\n\n# Biliary Obstruction\n# Cholangiocarcinoma\n# Small bowel obstruction/Ileus\n# Elevated liver function tests\n# Nausea with vomiting\n# Abdominal pain: Patient presented with two weeks of jaundice \nto ___, where he was found to have \nelevated liver enzymes, coagulopathy, prompting transfer to \n___ ICU.  ERCP at ___ showed stricture at intrahepatic ducts \nbifurcation, with biliary brushings confirming \ncholangiocarcinoma.  Stent placed during ERCP would not \nsuccessfully drain, prompting PTBD placement via ___, followed by \nrevision and placement of additional drain three days later, and \nthen another two days following due to displacement.  Patient \ndeveloped distended abdomen, with CT abdomen showing dilated \nbowel loops, concerning for ileus vs. small bowel obstruction.  \nSeveral NG tubes were placed, and patient pulled out several of \nthem. He developed progressively worse kidney and liver failure, \nand the family decided to make him comfort-focused care.  He \npassed away peacefully on ___.\n\n# Concern for Cirrhosis - given significant liver dysfunction on \npresentation, as well as pressence of ascites, there was concern \nfor additional new diagnosis of cirrhosis.  CHA paracentesis did \nnot show signs of SBP.  He was made comfort-focused care due to \nhis progressive organ failure.  He passed away peacefully on \n___.\n\n# Acute hypoxic respiratory failure\n# Hospital-acquired pneumonia: In ICU, patient remained \nintubated in the setting of multiple procedures and acute \nillness.  He was eventually extubated without complication.  He \ndeveloped pneumonia and was treated with vancomycin and cefepime \nfor a full course.  He passed away peacefully on ___.\n\n# Toxic metabolic encephalopathy: patient developed progressive \nencephalopathy, likely from progressive organ failure, and \npatient needed to be restrained for a period to prevent him from \npulling out tubes.  He eventually was made comfort-focused care.\n\n# Acute Renal Failure: In setting of acute illness above, Cr \npeaked at 1.8 from a normal baseline.  Responded to IV fluids \nand treatment of infection above initially, but then he \ndeveloped progressive organ failure, and patient was made \ncomfort-focused care.\n\n# Hyperlipidemia \n# Acute on Chronic Systolic CHF - in setting of acute illness \nand volume resuscitation developed acute systolic CHF, prompting \ninitiation of IV lasix for diuresis.  Statin held given elevated \nLFTs.  Continued aspirin.  Patient was made comfort-focused care \nand non-essential medications were discontinued.\n\n# Hypertension - held home ___ in setting of acute illness.\n\n# OSA - refusing CPAP; monitored via continuous O2 sat. \n\nTRANSITIONS OF CARE\n-------------------\n# Follow-up: He passed away peacefully on ___.\n \nMedications on Admission:\nThe Preadmission Medication list is accurate and complete.\n1. Ipratropium-Albuterol Neb 1 NEB NEB Q6H \n2. Lactulose 30 mL PO TID \n3. Multivitamins 1 TAB PO DAILY \n4. Nicotine Patch 21 mg TD DAILY \n5. Ondansetron 4 mg PO Q6H:PRN nausea \n6. Piperacillin-Tazobactam 3.375 g IV Q6H \n7. Spironolactone 50 mg PO DAILY \n8. budesonide-formoterol 160-4.5 mcg/actuation inhalation BID \n\n \nDischarge Medications:\nNone, patient deceased\n \nDischarge Disposition:\nExpired\n \nDischarge Diagnosis:\nCholangiocarcinoma \ncirrhosis \ndecompensated liver failure\nascites\nhepatic encephalopathy\nHealth Care Associated Pneumonia\n\n \nDischarge Condition:\nPatient deceased\n \nDischarge Instructions:\nPatient deceased\n \nFollowup Instructions:\n___\n"
+  },
+  {
+    "id": "case5",
+    "title": "Case 05",
+    "text": "在这里替换为 Case 05 的完整病例文本"
+  }
+];
+
+    // 4) results 保持 case -> prompt -> json 的结构
+    const results = {
+  "case1": {
+    "v1": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively you had nausea and dizziness, which improved.",
+        "You take clonazepam at bedtime, which can increase fall risk.",
+        "You were discharged as ambulatory and independent, and you were walking without concern at discharge."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_impairment": "no",
+        "dizziness_or_syncope": "yes",
+        "cognitive_impairment_or_confusion": "no",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_mobility_assistance": "no",
+        "functional_or_environmental_safety_concerns": "not stated"
+      },
+      "main_risk_factors": [
+        "recent dizziness after surgery",
+        "use of clonazepam at bedtime",
+        "recent surgery with short-term recovery needs"
+      ],
+      "explanation": "Your fall risk is moderate because you had dizziness after surgery and you take clonazepam, which can make falls more likely. You were walking independently at discharge, which is reassuring, but you should still be careful for a short time after surgery.",
+      "recommended_actions": [
+        "Take your time when standing up from sitting or lying down.",
+        "Walk slowly and use support if you feel unsteady or dizzy.",
+        "Keep your path clear at home and avoid loose rugs or clutter.",
+        "Ask someone to stay nearby if you feel weak, dizzy, or unsure while moving around."
+      ],
+      "uncertainty_note": "This assessment is based only on the details written in the note. Some common fall-risk details, such as prior falls or home safety issues, are not stated."
+    },
+    "v2": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "She is taking clonazepam at bedtime on admission, used sparingly.",
+        "She was ambulatory and independent at discharge.",
+        "Mental status was clear and coherent, and she was alert and interactive."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Use of clonazepam at bedtime",
+        "Recent surgery with short-term recovery period"
+      ],
+      "explanation": "You had dizziness after surgery, which can raise your fall risk for a short time. You were later walking on your own and your thinking was clear, which is reassuring. The note does not show a fall, but there are some temporary risk factors.",
+      "recommended_actions": [
+        "Take your time when you stand up or start walking, especially if you feel dizzy or unsteady.",
+        "Use extra care in the bathroom, on stairs, and on any slippery surfaces.",
+        "Ask for help if you feel weak, lightheaded, or unsure on your feet.",
+        "Keep your path at home clear of loose rugs, cords, and clutter."
+      ],
+      "uncertainty_note": "This assessment is based only on the note. It does not mention any recent falls, chronic balance problems, or use of a walking aid, so those factors are unknown."
+    },
+    "v3": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "She had postoperative nausea and dizziness.",
+        "She takes clonazepam at bedtime, and the note says to use it sparingly.",
+        "She is an older adult after surgery, but she was walking independently at discharge."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Recent nausea after surgery",
+        "Use of clonazepam, which can affect steadiness",
+        "Recent surgery with temporary recovery needs"
+      ],
+      "explanation": "You had dizziness after your surgery, and you also take clonazepam at bedtime. These can make you less steady for a short time. You were walking on your own at discharge, which is reassuring.",
+      "recommended_actions": [
+        "Get up slowly from bed or a chair.",
+        "Take your time when you first start walking, especially if you feel dizzy or weak.",
+        "Use extra care at home when going to the bathroom, showering, or moving around at night.",
+        "Ask for help right away if you feel lightheaded, unsteady, or sick to your stomach."
+      ],
+      "uncertainty_note": "There is no documented recent fall, recurrent falls, or ongoing balance problem in the note. The main concern comes from temporary postoperative dizziness and clonazepam use."
+    },
+    "v4": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "Medications on admission included clonazepam 0.5 mg at bedtime, use sparingly.",
+        "She was discharged as ambulatory and independent.",
+        "She was reported to be walking without concern before discharge."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Recent nausea after surgery",
+        "Use of clonazepam on admission",
+        "Recent surgery and short-term recovery period"
+      ],
+      "explanation": "You had some dizziness and nausea after surgery, and these can make you less steady. You were also taking clonazepam before admission, which can sometimes affect balance. By discharge, you were walking without concern and were independent.",
+      "recommended_actions": [
+        "Take your time when standing up or turning.",
+        "Ask for help if you feel dizzy or unsteady.",
+        "Keep your walking path clear and well lit.",
+        "Avoid rushing when you move around your home."
+      ],
+      "uncertainty_note": "There is no documented fall, and your walking was described as independent at discharge. The main concern comes from recent dizziness and the listed medicine history, so the overall risk is moderate rather than high."
+    },
+    "v5": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved.",
+        "She was prescribed clonazepam at bedtime on admission.",
+        "She is described as ambulatory and independent at discharge."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Use of clonazepam, which can increase fall risk",
+        "Recent hospitalization and surgery"
+      ],
+      "explanation": "You had dizziness after your surgery, which can make you less steady. You also take clonazepam at bedtime, which can sometimes increase fall risk. You were walking independently when you left the hospital, which is reassuring.",
+      "recommended_actions": [
+        "Get up slowly from sitting or lying down.",
+        "Use good lighting and keep walkways clear at home.",
+        "Avoid rushing, especially when you feel tired, dizzy, or unsteady.",
+        "Have someone help you if you feel weak or lightheaded."
+      ],
+      "uncertainty_note": "Your note does not document any recent falls or ongoing balance problems, so the risk level is based mainly on the temporary dizziness and clonazepam use."
+    },
+    "v6": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "Medications on admission included clonazepam at bedtime use sparingly.",
+        "She was discharged home after surgery and was walking and completing daily activities per normal."
+      ],
+      "main_risk_factors": [
+        "dizziness",
+        "sedative medication use",
+        "recent surgery with temporary postoperative symptoms"
+      ],
+      "explanation": "You had dizziness after surgery, which can raise your fall risk. You also take clonazepam at bedtime, which can make you less steady. At discharge, you were walking on your own, which is reassuring.",
+      "recommended_actions": [
+        "Move slowly when you stand up, sit down, or turn around.",
+        "Use good lighting and keep walkways clear of clutter and loose rugs.",
+        "Wear shoes with firm, non-slip soles.",
+        "Ask for help with stairs or any activity that makes you feel unsteady."
+      ],
+      "uncertainty_note": "There is no documented fall, but there are documented fall-risk indicators such as dizziness and clonazepam use."
+    },
+    "v7": {
+      "risk_level": "Moderate",
+      "current_or_recent_fall_evidence": [],
+      "historical_fall_evidence": [],
+      "other_risk_factors": [
+        "Postoperative nausea and dizziness were documented, which can increase fall risk.",
+        "She is taking clonazepam at bedtime at home, which can make you sleepy or unsteady.",
+        "She had recent surgery and was recovering at discharge, which can temporarily affect balance and strength."
+      ],
+      "explanation": "Your note does not say that you had a fall. Your fall risk is moderate because you had recent dizziness after surgery and you take a medicine that can make you unsteady. You were walking independently at discharge, which is reassuring.",
+      "recommended_actions": [
+        "Move slowly when you stand up, sit down, or turn around.",
+        "Use good lighting and keep walkways clear of loose rugs, cords, and clutter.",
+        "Wear sturdy shoes or non-slip slippers when you walk.",
+        "Ask for help if you feel dizzy, weak, or unsteady."
+      ],
+      "uncertainty_note": "There is no explicit current or past fall event in the note. The risk level is based on documented dizziness, recent surgery, and clonazepam use."
+    },
+    "v8": {
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_problem": "yes",
+        "dizziness_or_syncope": "yes",
+        "cognitive_or_safety_awareness_problem": "no",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_assistance_needed": "no",
+        "functional_or_environmental_safety_concern": "yes"
+      },
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "Medication on admission included clonazepam 0.5 mg at bedtime.",
+        "Discharge condition: 'Ambulatory - Independent.'",
+        "She was discharged home once she was eating, on oral medications, walking, and completing daily activities per normal."
+      ],
+      "explanation": "You had dizziness after surgery, and you take clonazepam, which can increase fall risk. You were able to walk on your own and your thinking was clear, so your risk is moderate rather than high.",
+      "recommended_actions": [
+        "Get up slowly from sitting or lying down.",
+        "Keep your walkways clear and use good lighting at home.",
+        "Wear shoes or slippers with non-slip soles.",
+        "Take extra care when you feel dizzy, tired, or unsteady."
+      ],
+      "uncertainty_note": "This review is based only on what was written in the discharge note. Some fall risks, like prior falls or home hazards, were not mentioned."
+    },
+    "v9": {
+      "risk_level": "Low",
+      "evidence": [
+        "Discharge Condition: Activity Status: Ambulatory - Independent.",
+        "She was discharged home once she was eating, on oral medications, walking, and completing daily activities per normal.",
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "POD #1 ... ambulating without concern."
+      ],
+      "explanation": "You were walking on your own and doing your daily activities normally when you left the hospital. You did have some nausea and dizziness after surgery, but these improved and were not still present at discharge.",
+      "uncertainty_note": "This note does not mention any prior falls, balance problems, or use of a walking aid, so the risk level is based only on the documented discharge status."
+    },
+    "v10": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "You had nausea and dizziness after surgery, which can increase fall risk while it is happening.",
+        "You were discharged as ambulatory and independent, and you were walking without concern at discharge, which lowers the risk.",
+        "You take clonazepam at bedtime at home, and this medicine can sometimes make you sleepy or less steady, but the note does not say it caused any problems during this stay."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "no",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_impairment": "no",
+        "dizziness_or_syncope": "yes",
+        "cognitive_impairment_or_confusion": "no",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_mobility_assistance": "no",
+        "functional_or_environmental_safety_concerns": "not stated"
+      },
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Use of clonazepam at bedtime",
+        "Recent surgery with temporary recovery period"
+      ],
+      "explanation": "Your fall risk looks moderate. You had dizziness after surgery, and dizziness can make you less steady. You were walking independently by discharge, so your risk does not look high right now. You also take clonazepam at bedtime, which can sometimes make you sleepy or unsteady.",
+      "recommended_actions": [
+        "Take your time when standing up or starting to walk.",
+        "If you feel dizzy or unsteady, sit or lie down right away and ask for help.",
+        "Keep your walking path clear and well lit at home.",
+        "Use extra care at night, especially when getting up from bed.",
+        "If you feel new dizziness, worsening weakness, or trouble walking safely, get help right away."
+      ],
+      "uncertainty_note": "The note does not say whether you have had falls before, or whether clonazepam has caused any sleepiness or balance problems for you."
+    }
+  },
+  "case2": {
+    "v1": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively you had nausea and dizziness, which improved with antiemetics.",
+        "You were taking clonazepam at bedtime before admission, which can increase fall risk.",
+        "You were discharged home and were ambulatory and independent at discharge."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "no",
+        "recurrent_falls": "no",
+        "mobility_or_balance_impairment": "yes",
+        "dizziness_or_syncope": "yes",
+        "cognitive_impairment_or_confusion": "no",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "no",
+        "walking_aid_or_mobility_assistance": "no",
+        "functional_or_environmental_safety_concerns": "not stated"
+      },
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Nausea after surgery",
+        "Use of clonazepam before admission"
+      ],
+      "explanation": "You have a moderate fall risk because you had dizziness after surgery, and you were taking clonazepam before admission. You were walking on your own when you left the hospital, which is reassuring, but the recent dizziness still matters.",
+      "recommended_actions": [
+        "Take your time when you stand up, especially after resting or lying down.",
+        "Use support when walking if you feel unsteady or dizzy.",
+        "Avoid rushing, and ask for help with tasks if you do not feel steady.",
+        "Keep your home walkway clear and well lit to lower the chance of tripping."
+      ],
+      "uncertainty_note": "There is no documented fall, but there was recent dizziness and a medicine that can increase fall risk, so the risk level is based on those findings."
+    },
+    "v2": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively you had nausea and dizziness, which improved with antiemetics.",
+        "You were taking clonazepam at bedtime before admission, and this medicine can sometimes affect steadiness.",
+        "You had a recent surgery and then needed overnight observation before going home.",
+        "At discharge you were alert, coherent, and walking independently."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Recent surgery with short-term recovery needs",
+        "Use of clonazepam before admission",
+        "History of back pain"
+      ],
+      "explanation": "You had some short-term fall risk because you felt dizzy and nauseated after surgery. You were also recovering from an operation, and you had used clonazepam before admission. At discharge, you were alert and walking independently, which is reassuring.",
+      "recommended_actions": [
+        "Move slowly when you stand up, especially if you feel lightheaded.",
+        "Ask for help if you feel dizzy, weak, or unsteady.",
+        "Keep walkways clear and use good lighting at home.",
+        "If you feel unsteady, avoid rushing and take extra care on stairs and in the bathroom."
+      ],
+      "uncertainty_note": "The note does not mention any recent falls, balance problem before admission, confusion, or walking aid use. Some details are not stated, so the risk level is based only on the information provided."
+    },
+    "v3": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "She takes clonazepam 0.5 mg at bedtime and was told to use it sparingly.",
+        "She was discharged as ambulatory and independent, and was walking without concern before discharge.",
+        "Mental status was clear and coherent, and she was alert and interactive."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Use of clonazepam, which can increase fall risk",
+        "Recent surgery with short-term recovery needs"
+      ],
+      "explanation": "You had some dizziness after your surgery, and you take clonazepam at bedtime, which can make falls more likely. The note also says you were walking well and were independent at discharge, so the risk is not described as severe.",
+      "recommended_actions": [
+        "Get up slowly when you stand or start walking.",
+        "Use extra care when you feel dizzy, weak, or unsteady.",
+        "Keep your walking areas clear of loose rugs, cords, and clutter.",
+        "Ask for help if you feel unwell or if your balance is off."
+      ],
+      "uncertainty_note": "The note does not mention any recent falls, ongoing balance problem, or need for a walking aid. The risk level is based on the documented dizziness and clonazepam use."
+    },
+    "v4": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively you had nausea and dizziness, which improved.",
+        "You were ambulating without concern at discharge.",
+        "You were started on clonazepam at bedtime before admission, which can affect steadiness.",
+        "You were discharged home after surgery and were walking and doing daily activities normally."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Recent nausea after surgery",
+        "Use of clonazepam at bedtime",
+        "Recent surgery with temporary recovery period"
+      ],
+      "explanation": "You had dizziness and nausea after your surgery, and these can raise your fall risk for a short time. You were walking without concern at discharge, so your risk does not look high, but some caution is still sensible. Clonazepam at bedtime may also affect your steadiness.",
+      "recommended_actions": [
+        "Take your time when standing up or turning.",
+        "Use extra care when walking if you feel dizzy, weak, or unsteady.",
+        "Keep your home floors clear and rooms well lit.",
+        "Ask for help if you do not feel safe moving around."
+      ],
+      "uncertainty_note": "This assessment is based only on what was written in the note. No prior falls, balance problems, or lasting walking problems were stated."
+    },
+    "v5": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "She takes clonazepam 0.5 mg at bedtime and was told to use it sparingly.",
+        "She was discharged as ambulatory and independent, with no documented fall or gait problem at discharge."
+      ],
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Use of clonazepam, a medicine that can increase fall risk",
+        "Recent surgery with short-term recovery period"
+      ],
+      "explanation": "You had dizziness after surgery, and you also take clonazepam, which can make falls more likely. At discharge, you were walking independently and your mental status was clear, so there is not strong evidence of a high fall risk.",
+      "recommended_actions": [
+        "Rise slowly from sitting or lying down, especially if you feel lightheaded.",
+        "Use extra care when walking, especially at night or when you first get up.",
+        "Keep walkways clear, use good lighting, and wear stable, non-slip shoes.",
+        "Ask for help if you feel dizzy, weak, or unsteady."
+      ],
+      "uncertainty_note": "The note does not document any actual fall, ongoing balance problem, or need for a walking aid, so the level of risk is based on limited but clear warning signs."
+    },
+    "v6": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "Medication on admission included clonazepam 0.5 mg at bedtime.",
+        "She was discharged after surgery and was walking and completing daily activities per normal."
+      ],
+      "main_risk_factors": [
+        "dizziness",
+        "sedative medication use",
+        "recent surgery with temporary postoperative symptoms"
+      ],
+      "explanation": "You had dizziness after surgery, and that can raise your fall risk. You also take clonazepam, which can make you sleepy or unsteady. By discharge, you were walking on your own and doing your usual activities.",
+      "recommended_actions": [
+        "You should get up slowly from sitting or lying down.",
+        "You should use good lighting and keep walkways clear of loose rugs or clutter.",
+        "You should hold onto stable support when you feel unsteady.",
+        "You should ask for help if you feel dizzy, weak, or off balance."
+      ],
+      "uncertainty_note": "There is no documented recent fall or ongoing mobility problem, so this is based on dizziness and clonazepam use plus the recent postoperative period."
+    },
+    "v7": {
+      "risk_level": "Moderate",
+      "current_or_recent_fall_evidence": [],
+      "historical_fall_evidence": [],
+      "other_risk_factors": [
+        "Postoperative nausea and dizziness, which improved",
+        "Clonazepam use at bedtime, which can increase fall risk",
+        "Recent surgery and recovery period",
+        "Back pain"
+      ],
+      "explanation": "You do not have any documented current fall or recent fall event in this note. Your fall risk is moderate because you had recent dizziness after surgery and you take clonazepam, which can make you less steady.",
+      "recommended_actions": [
+        "You should get up slowly, especially when standing from bed or a chair.",
+        "You should keep walkways clear and use good lighting at home.",
+        "You should avoid rushing when you walk, especially if you feel dizzy or weak.",
+        "You should ask for help with tasks if you feel unsteady."
+      ],
+      "uncertainty_note": "There is no documented history of falls in this note, so past fall risk is not stated."
+    },
+    "v8": {
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_problem": "yes",
+        "dizziness_or_syncope": "yes",
+        "cognitive_or_safety_awareness_problem": "no",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_assistance_needed": "no",
+        "functional_or_environmental_safety_concern": "not stated"
+      },
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness, which improved with antiemetics.",
+        "She was discharged after she was \"walking\" and had \"Activity Status: Ambulatory - Independent.\"",
+        "Medication on admission included clonazepam 0.5 mg at bedtime, use sparingly.",
+        "Mental Status: Clear and coherent."
+      ],
+      "explanation": "You had dizziness after surgery, and you take clonazepam, which can increase fall risk. You were able to walk on your own and your thinking was clear, so your risk is not high, but it is still more than low.",
+      "recommended_actions": [
+        "You should get up slowly, especially after lying down or sitting for a while.",
+        "You should keep walkways clear and make sure your home is well lit.",
+        "You should wear sturdy shoes and avoid rushing when you move around.",
+        "You should ask for help if you feel dizzy, weak, or unsteady."
+      ],
+      "uncertainty_note": "This note does not say whether you have had any recent falls, repeated falls, or a home safety problem, so those factors are unknown."
+    },
+    "v9": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "Postoperatively she had nausea and dizziness.",
+        "She had mild tongue tingling on POD #1, but the symptoms later resolved.",
+        "She was ambulatory and independent at discharge."
+      ],
+      "explanation": "You had some dizziness after surgery, which can make falls more likely. Your symptoms later got better, and you were walking on your own when you left the hospital. That suggests your fall risk was not high at discharge, but it was not fully zero.",
+      "uncertainty_note": "This rating is based only on the discharge note. It does not include any falls history before this admission."
+    },
+    "v10": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "You had nausea and dizziness after surgery, and this improved with anti-nausea medicine.",
+        "You were discharged as ambulatory and independent, and you were walking without concern before going home.",
+        "You take clonazepam at bedtime at home, which can increase fall risk, but the note does not say if you used it during this hospital stay."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_impairment": "not stated",
+        "dizziness_or_syncope": "yes",
+        "cognitive_impairment_or_confusion": "no",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_mobility_assistance": "no",
+        "functional_or_environmental_safety_concerns": "not stated"
+      },
+      "main_risk_factors": [
+        "Recent dizziness after surgery",
+        "Recent nausea after surgery",
+        "Clonazepam use at bedtime",
+        "Recent major surgery"
+      ],
+      "explanation": "Your fall risk is moderate. You had dizziness and nausea after surgery, which can make you less steady for a short time. You were also taking clonazepam at home, which can make you sleepy or unsteady. The note says you were walking independently when you left, so there is no clear sign of a major walking problem at discharge.",
+      "recommended_actions": [
+        "Take your time when standing up or turning around.",
+        "Use extra care if you feel dizzy, weak, or unsteady.",
+        "Keep your walking path clear and well lit at home.",
+        "Ask for help with tasks that feel unsafe, especially right after surgery.",
+        "Sit down right away if you feel faint, shaky, or unsteady."
+      ],
+      "uncertainty_note": "The note does not say whether you had any falls before this admission, and it does not say if clonazepam was used during the hospital stay."
+  
+}
+  },
+
+  "case3": {
+    "v1": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "You reported safety concerns at home about falling.",
+        "You said you were unable to walk, although staff saw you walking in your room and to the bathroom without difficulty.",
+        "You declined an assistive device."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_impairment": "yes",
+        "dizziness_or_syncope": "not stated",
+        "cognitive_impairment_or_confusion": "no",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_mobility_assistance": "yes",
+        "functional_or_environmental_safety_concerns": "yes"
+      },
+      "main_risk_factors": [
+        "Concern about walking safely at home",
+        "Pain and reported trouble walking",
+        "Declined an assistive device",
+        "Gabapentin and tramadol on discharge, which can sometimes make you sleepy or unsteady"
+      ],
+      "explanation": "Your fall risk is moderate. You said you were worried about falling at home, and you reported trouble walking. Staff also noted that you declined a walking aid.",
+      "recommended_actions": [
+        "Take your time when you stand up, especially after resting.",
+        "Use support when walking if you feel unsteady or in pain.",
+        "Keep your path at home clear of loose rugs, cords, and clutter.",
+        "Ask for help with tasks that make you feel unsafe, especially when you are tired or hurting."
+      ],
+      "uncertainty_note": "The note does not state whether you had a recent fall or repeated falls, so those factors are not included."
+    },
+    "v2": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "She said she had safety concerns at home about falling.",
+        "She reported severe right leg pain and said she could not walk, although staff saw her walking in her room and to the bathroom without difficulty.",
+        "She declined an assistive device when one was offered.",
+        "Her discharge condition says she was ambulatory and independent."
+      ],
+      "main_risk_factors": [
+        "Leg pain that may affect safe walking",
+        "Safety concerns about falling at home",
+        "Declined an assistive device",
+        "No recent fall is stated"
+      ],
+      "explanation": "Your note shows some fall risk because you had leg pain and said you were worried about falling at home. Staff also noted a mismatch between your reported trouble walking and what they saw you do, which suggests your safety with walking may need attention. At discharge, you were able to walk on your own, so the risk is not clearly high.",
+      "recommended_actions": [
+        "Move slowly when you stand up, and pause before you start walking.",
+        "Use good lighting and keep walkways free of loose rugs, cords, or clutter.",
+        "Ask for help if your leg pain or balance feels worse.",
+        "Wear safe, supportive shoes when you are up and walking."
+      ],
+      "uncertainty_note": "The note does not state a recent fall, dizziness, fainting, or a clear balance problem. Some details about home safety are unclear, so this assessment is based only on what was written."
+    },
+    "v3": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "She reported safety concerns at home regarding her fall risk.",
+        "She said she was unable to walk because of pain, but staff saw her walking in her room and to the bathroom without difficulty.",
+        "She declined an assistive device.",
+        "Discharge condition says she was ambulatory and independent.",
+        "She was tearful and in significant right leg pain during admission."
+      ],
+      "main_risk_factors": [
+        "Pain in the right leg",
+        "Reported concern about fall risk at home",
+        "Declined an assistive device",
+        "Possible mismatch between reported ability and observed walking"
+      ],
+      "explanation": "Your notes show some fall risk because you were having right leg pain and you told the team you were worried about falling at home. The team also noted that you declined a walking aid, even though you were seen walking without much difficulty.",
+      "recommended_actions": [
+        "Take your time when you stand up and start walking.",
+        "Use a steady handhold or support if you feel unsteady.",
+        "Keep your walking path clear at home and avoid clutter.",
+        "Ask for help if your leg pain or balance feels worse."
+      ],
+      "uncertainty_note": "There is no documented recent fall, recurrent falls, dizziness, confusion, or a diagnosed walking problem in the note. The risk level is based mainly on reported fall concern, pain, and the discussion about needing help with mobility."
+    },
+    "v4": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "The note says you reported safety concerns at home related to your fall risk.",
+        "You said you were unable to walk, but staff observed you walking in your room and to the bathroom without difficulty.",
+        "You declined an assistive device after evaluation.",
+        "Your discharge condition was listed as ambulatory and independent.",
+        "You had significant right leg pain and bilateral shin wounds, which may affect safe movement."
+      ],
+      "main_risk_factors": [
+        "Reported fall-risk concerns at home",
+        "Leg pain and leg wounds",
+        "Possible mismatch between how you felt and how you were seen moving",
+        "Declined an assistive device"
+      ],
+      "explanation": "You reported concern about falling at home, and you had right leg pain and wounds that may make moving around harder. Staff also noted that you were walking on your own before discharge, so your fall risk is present but not clearly severe from the note.",
+      "recommended_actions": [
+        "Take your time when standing up, turning, and walking.",
+        "Use support from furniture or another person if you feel unsteady.",
+        "Keep walkways clear and well lit at home.",
+        "Ask for help right away if your leg pain, weakness, or balance feels worse."
+      ],
+      "uncertainty_note": "The note does not state a recent fall, repeated falls, or a specific walking problem at discharge. Some risk is suggested by your own concern and your leg pain, but the overall fall risk is not fully clear."
+    },
+    "v5": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "The note says you reported safety concerns at home regarding fall risk.",
+        "You had severe right leg pain, and staff documented concern about your ability to walk safely at home.",
+        "You were offered an assistive device and evaluation, but you declined the assistive device."
+      ],
+      "main_risk_factors": [
+        "Reported fall-risk concerns at home",
+        "Pain affecting mobility",
+        "Declined assistive device"
+      ],
+      "explanation": "You reported concerns about falling at home, and your leg pain may make it harder for you to move safely. The note also says you declined an assistive device, so your safety may depend more on how steady you feel at home.",
+      "recommended_actions": [
+        "Move slowly when you stand up, especially after sitting or lying down.",
+        "Keep walkways clear and use good lighting at home.",
+        "Wear shoes or slippers with non-slip soles.",
+        "Ask for help with walking or chores if your pain makes you unsteady."
+      ],
+      "uncertainty_note": "There is no clear documented recent fall or proven balance problem, so this is a cautious moderate-risk assessment based on the safety concerns and mobility issues mentioned in the note."
+    },
+    "v6": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "She endorsed safety concerns at home regarding her fall risk.",
+        "She was observed walking in her room and to the bathroom without difficulty.",
+        "She declined an assistive device.",
+        "She had severe right leg pain and bilateral shin wounds with cellulitis.",
+        "Her discharge medications include gabapentin and tramadol, which can affect steadiness."
+      ],
+      "main_risk_factors": [
+        "Safety concerns about falling at home",
+        "Pain and leg wounds that may make walking harder",
+        "Declined an assistive device",
+        "Use of gabapentin and tramadol"
+      ],
+      "explanation": "You reported safety concerns about falling at home. You also had right leg pain and leg wounds, and you declined an assistive device. These factors can make safe walking harder.",
+      "recommended_actions": [
+        "Use extra care when you stand up, walk, or turn.",
+        "Keep paths at home clear and well lit.",
+        "Wear sturdy, non-slip shoes.",
+        "Ask for help with tasks if pain or weakness makes you unsteady."
+      ],
+      "uncertainty_note": "The note does not document a recent fall or repeated falls. It does document fall concerns and factors that could make you less steady."
+    },
+    "v7": {
+      "risk_level": "Moderate",
+      "current_or_recent_fall_evidence": [],
+      "historical_fall_evidence": [
+        "She endorsed safety concerns at home regarding her fall risk.",
+        "She initially declined our offer of evaluation, then was cleared to go home.",
+        "The note does not document any actual recent fall."
+      ],
+      "other_risk_factors": [
+        "She had right leg pain and bilateral shin wounds, which may affect safe walking.",
+        "She was tearful and in significant discomfort during the stay.",
+        "She was discharged on tramadol and gabapentin, which can make you more unsteady.",
+        "She has diabetes with recent DKA and dehydration, which can make you weaker."
+      ],
+      "explanation": "Your note does not show a current fall, but it does show some fall risk concerns. You had leg pain and wounds, and you told the team you were worried about falling at home. You were able to walk on your own at discharge, which is reassuring.",
+      "recommended_actions": [
+        "Use extra care when you stand up, walk, or turn, especially if you feel weak or dizzy.",
+        "Keep your walking path clear of cords, clutter, and loose rugs.",
+        "Use good lighting at home, especially at night.",
+        "Ask for help if your leg pain makes you feel unsteady."
+      ],
+      "uncertainty_note": "The note mentions fall risk concerns, but it does not state a prior fall or a current fall event. Overall risk is based on pain, wounds, recent illness, and discharge concerns."
+    },
+    "v8": {
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_problem": "yes",
+        "dizziness_or_syncope": "not stated",
+        "cognitive_or_safety_awareness_problem": "yes",
+        "sedative_or_psychoactive_medication": "yes",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_assistance_needed": "no",
+        "functional_or_environmental_safety_concern": "yes"
+      },
+      "risk_level": "Moderate",
+      "evidence": [
+        "The note says you had right leg pain and staff were concerned about how you were moving, but you were also seen walking in your room and to the bathroom without difficulty.",
+        "The note says you reported safety concerns at home about falling and initially declined therapy evaluation.",
+        "You were discharged on gabapentin and tramadol, which can make falls more likely.",
+        "You were cleared to go home and you declined an assistive device."
+      ],
+      "explanation": "You have some fall risk because your leg pain may affect how you move, and the team noted safety concerns at home. You were still walking on your own and did not need a walking aid, so this does not look like a very high risk situation.",
+      "recommended_actions": [
+        "Use extra care when you stand up, turn, or walk, especially if your leg hurts.",
+        "Keep walkways clear and make sure your home has good lighting.",
+        "Wear shoes or slippers with good grip.",
+        "Ask for help with tasks that feel unsafe or painful."
+      ],
+      "uncertainty_note": "The note does not clearly state a recent fall, dizziness, or a clear balance disorder. Some risk factors are based on safety concerns and observed pain-related movement issues."
+    },
+    "v9": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "She said she had safety concerns at home about falling.",
+        "She initially declined a physical therapy evaluation, then was cleared to go home.",
+        "The note says she was seen walking in her room and to the bathroom without difficulty.",
+        "Her discharge status says she was ambulatory and independent."
+      ],
+      "explanation": "You did say you were worried about safety at home because of falling. You also had leg pain, but you were still walking on your own and were cleared to go home. This makes your fall risk seem moderate, not low or high, based on what was written.",
+      "uncertainty_note": "The note does not document a fall, a prior fall history, or a formal fall-risk score."
+    },
+    "v10": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "You reported safety concerns at home about your fall risk.",
+        "You were able to walk in your room and to the bathroom without difficulty, but you also said you were unable to ambulate at times.",
+        "Your team noted right leg pain and bilateral shin wounds, which can make walking feel less steady or less comfortable.",
+        "You declined an assistive device, and you were cleared to go home after evaluation."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_impairment": "yes",
+        "dizziness_or_syncope": "not stated",
+        "cognitive_impairment_or_confusion": "no",
+        "sedative_or_psychoactive_medication": "not stated",
+        "frailty_or_weakness": "not stated",
+        "walking_aid_or_mobility_assistance": "no",
+        "functional_or_environmental_safety_concerns": "yes"
+      },
+      "main_risk_factors": [
+        "Your fall-risk concerns at home",
+        "Pain and leg wounds that may affect how safely you move",
+        "Mixed reports about walking ability, with good walking observed but also times when you said you could not walk"
+      ],
+      "explanation": "Your fall risk looks moderate. You said you were worried about falling at home, and your leg pain and wounds may make walking less comfortable or steady. You were also seen walking safely at times, so there is not clear evidence of a severe walking problem. Important details about past falls are not stated.",
+      "recommended_actions": [
+        "Take your time when you stand up and start walking.",
+        "Use extra caution on stairs, wet floors, and uneven ground.",
+        "Keep walkways clear and well lit at home.",
+        "Ask for help if your leg pain makes you feel unsteady.",
+        "Pay attention to any new trouble walking or any new fall, and get help if that happens."
+      ],
+      "uncertainty_note": "Important details about any recent fall, repeated falls, dizziness, or a home safety assessment are not stated."
+    }
+},
+  
+  "case4": {
+    "v1": {
+      "risk_level": "High",
+      "evidence": [
+        "Subtle confusion was documented, and later progressive encephalopathy was noted.",
+        "You were sedated and intubated on admission, and you needed restraints at one point to stop you from pulling out tubes.",
+        "You had severe illness with progressive organ failure, including liver failure, kidney failure, and infection.",
+        "You had abdominal distension and bowel problems during the hospital stay, which can make moving safely harder."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_impairment": "yes",
+        "dizziness_or_syncope": "not stated",
+        "cognitive_impairment_or_confusion": "yes",
+        "sedative_or_psychoactive_medication": "not stated",
+        "frailty_or_weakness": "yes",
+        "walking_aid_or_mobility_assistance": "not stated",
+        "functional_or_environmental_safety_concerns": "yes"
+      },
+      "main_risk_factors": [
+        "Confusion and encephalopathy",
+        "Severe illness with weakness and organ failure",
+        "Need for restraints because of unsafe tube pulling",
+        "Hospital-related safety concerns during a complex ICU stay"
+      ],
+      "explanation": "You had several strong fall-risk factors during this hospital stay. You were confused at times, very ill, and needed restraints to protect your tubes. These problems can make it harder for you to move safely.",
+      "recommended_actions": [
+        "Take your time when standing up or turning.",
+        "Use support when walking if you feel weak or unsteady.",
+        "Ask for help before you get out of bed or move around if you are not sure you are steady.",
+        "Keep your area clear of clutter and make sure you have good lighting when moving around."
+      ],
+      "uncertainty_note": "This assessment is based only on what was written in the note. A recent fall, dizziness, or use of a walking aid was not stated."
+    },
+    "v2": {
+      "risk_level": "High",
+      "evidence": [
+        "He developed confusion and needed lactulose and rifaximin with good effect.",
+        "He was sedated and intubated on admission, and later developed progressive encephalopathy.",
+        "He needed restraints for a period to stop him from pulling out tubes.",
+        "He had progressive organ failure and was very ill in the ICU.",
+        "He pulled out several NG tubes."
+      ],
+      "main_risk_factors": [
+        "Confusion and encephalopathy",
+        "Sedation and critical illness",
+        "Need for restraints because of safety concerns",
+        "Severe weakness and decline from progressive organ failure"
+      ],
+      "explanation": "Your note shows clear safety concerns from confusion and worsening encephalopathy. You also needed restraints at one point and were very sick in the ICU, which can make falls or unsafe movement more likely. A fall history is not stated, but the overall risk for unsafe movement was high.",
+      "recommended_actions": [
+        "You should have close help when moving or walking if you are feeling weak, sleepy, or confused.",
+        "You should take your time when getting up, and use support if you feel unsteady.",
+        "You should keep your path clear at home so you do not trip on tubes, cords, rugs, or clutter.",
+        "Your family or caregivers should watch for new confusion or unsafe behavior and get help right away if it happens."
+      ],
+      "uncertainty_note": "This assessment is based only on the note. A recent fall is not documented, and details about your usual walking ability, balance, or use of a walking aid are not stated."
+    },
+    "v3": {
+      "risk_level": "High",
+      "evidence": [
+        "He had subtle confusion and later progressive encephalopathy.",
+        "He was sedated and intubated on admission, and later needed restraints to stop him from pulling out tubes.",
+        "He had progressive organ failure and severe illness with weakness and reduced function.",
+        "He had low potassium and was very sick in the ICU, which can make movement less safe."
+      ],
+      "main_risk_factors": [
+        "Confusion / encephalopathy",
+        "Sedation and intubation",
+        "Need for restraints because he pulled at tubes",
+        "Severe illness with progressive organ failure",
+        "Low potassium"
+      ],
+      "explanation": "Your note shows several strong reasons for fall risk. You had confusion, were sedated and intubated, and later needed restraints because you were pulling at tubes. You were also very sick with progressive organ failure, which makes safe movement harder.",
+      "recommended_actions": [
+        "Ask for help before you get up or move around.",
+        "Move slowly when changing position, especially when sitting up or standing.",
+        "Keep your call button, walker, or other needed items within reach if you are using them.",
+        "Make sure your path is clear of cords, tubing, and other things you could trip over."
+      ],
+      "uncertainty_note": "This assessment is based only on what is written in the note. A specific history of falls, walking aid use, or long-term mobility problems is not stated."
+    },
+    "v4": {
+      "risk_level": "Moderate",
+      "evidence": [
+        "He had subtle confusion and later progressive encephalopathy.",
+        "He was sedated and intubated on admission, and later needed restraints to stop him from pulling out tubes.",
+        "He had severe illness with progressive organ failure, weakness is not directly stated but his function was clearly reduced.",
+        "He had spinal stenosis, but no direct mobility or fall history is stated."
+      ],
+      "main_risk_factors": [
+        "Confusion/encephalopathy",
+        "Sedation and intubation during the hospital course",
+        "Reduced safety awareness, with pulling at tubes and needing restraints",
+        "Severe overall illness with progressive organ failure"
+      ],
+      "explanation": "You had confusion during the hospital stay, and you also needed restraints at one point because you were pulling at tubes. You were very unwell overall, which can make safe movement harder. There is no fall history stated in the note.",
+      "recommended_actions": [
+        "Take your time when standing up or turning.",
+        "Ask for help before walking if you feel weak, confused, or unsteady.",
+        "Keep your path clear and well lit at home.",
+        "Use support when moving around if you do not feel steady."
+      ],
+      "uncertainty_note": "This note does not state any recent falls, recurrent falls, or a detailed walking problem. The risk level is based on confusion, sedation, and safety concerns during the hospital stay."
+    },
+    "v5": {
+      "risk_level": "High",
+      "evidence": [
+        "He developed progressive encephalopathy and needed restraints to prevent him from pulling out tubes.",
+        "He was intubated and sedated during the admission.",
+        "He was described as having progressive organ failure and severe acute illness."
+      ],
+      "main_risk_factors": [
+        "Confusion/encephalopathy",
+        "Severe illness and weakness/deconditioning",
+        "Sedation and limited ability to move safely",
+        "Need for restraints and tube pulling, suggesting poor safety awareness"
+      ],
+      "explanation": "Your note shows confusion/encephalopathy and that you needed restraints to keep you from pulling out tubes. You were also very ill and sedated during the hospital stay, which can make safe movement harder and increase fall risk.",
+      "recommended_actions": [
+        "Use help when getting up, walking, or going to the bathroom.",
+        "Move slowly when changing positions, especially from lying to sitting or standing.",
+        "Keep your path clear of clutter, cords, and loose rugs.",
+        "Make sure you have good lighting and use support if you feel unsteady."
+      ],
+      "uncertainty_note": "This assessment is based only on the documented hospital course. There is no explicit record of a recent fall, so the high risk rating is driven by clear confusion, sedation, and safety concerns."
+    },
+    "v6": {
+      "risk_level": "High",
+      "evidence": [
+        "The note says he had subtle confusion and later progressive encephalopathy.",
+        "He was sedated and intubated during the hospitalization.",
+        "He needed restraints to prevent him from pulling out tubes.",
+        "He had weakness and serious illness with progressive organ failure."
+      ],
+      "main_risk_factors": [
+        "confusion or cognitive impairment",
+        "sedation/intubation",
+        "frailty/weakness from severe illness",
+        "safety concerns in daily function"
+      ],
+      "explanation": "You had confusion during the hospital stay, and your condition also became severe enough that you were sedated and needed restraints. These are clear signs that you could have had a high risk of falling or unsafe movement.",
+      "recommended_actions": [
+        "Move slowly when you get up or change position.",
+        "Ask for help before walking if you feel weak, confused, or unsteady.",
+        "Keep your walking path clear and well lit.",
+        "Use stable support, such as holding furniture or a handrail, when moving around."
+      ],
+      "uncertainty_note": "The note does not document a recent fall, but it does document several strong fall-risk indicators."
+    },
+    "v7": {
+      "risk_level": "High",
+      "current_or_recent_fall_evidence": [],
+      "historical_fall_evidence": [],
+      "other_risk_factors": [
+        "He had confusion/encephalopathy during the hospital stay.",
+        "He was sedated and intubated for part of the admission.",
+        "He had severe liver failure, jaundice, ascites, weakness, and progressive organ failure.",
+        "He needed restraints at one point to prevent him from pulling out tubes.",
+        "He had spinal stenosis, which can affect balance and walking.",
+        "He had low potassium and acute illness, which can increase weakness and instability."
+      ],
+      "explanation": "Your note does not say that you had a recent fall. Your fall risk is still high because you had confusion, severe illness, weakness, and needed help with tubes and care during the hospital stay.",
+      "recommended_actions": [
+        "Ask for help before you get up or walk.",
+        "Move slowly when you stand, and sit down right away if you feel weak or dizzy.",
+        "Keep walkways clear and use good lighting at home.",
+        "Wear supportive shoes and use your usual walking aid if you have one."
+      ],
+      "uncertainty_note": "There is no explicit documentation of a current fall or a past fall history in this note. The risk level is based on other documented factors that can increase fall risk."
+    },
+    "v8": {
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_problem": "yes",
+        "dizziness_or_syncope": "not stated",
+        "cognitive_or_safety_awareness_problem": "yes",
+        "sedative_or_psychoactive_medication": "not stated",
+        "frailty_or_weakness": "yes",
+        "walking_aid_or_assistance_needed": "not stated",
+        "functional_or_environmental_safety_concern": "yes"
+      },
+      "risk_level": "High",
+      "evidence": [
+        "He was described as sedated and intubated on admission.",
+        "He developed progressive encephalopathy and had to be restrained to prevent pulling out tubes.",
+        "He had progressive organ failure, decompensated liver disease, ascites, edema, and acute renal/liver failure.",
+        "He had ileus or small bowel obstruction with abdominal distention and pulled out several NG tubes."
+      ],
+      "explanation": "You had several serious problems that can raise fall risk, including confusion, severe illness, and weakness from organ failure. You also needed restraints at one point because you were pulling at tubes, which shows limited safety awareness. These factors together suggest a high risk for falling.",
+      "recommended_actions": [
+        "Move slowly when you get up, sit for a moment before standing, and ask for help if you feel unsteady.",
+        "Keep your path clear at home and remove loose rugs, cords, or other trip hazards.",
+        "Wear shoes with good grip and use handrails when you can.",
+        "Make sure you have good lighting, especially at night."
+      ],
+      "uncertainty_note": "This review is based only on what was explicitly written in the note. No fall history was documented, so some risk factors could not be confirmed."
+    },
+    "v9": {
+      "risk_level": "High",
+      "evidence": [
+        "The note says you developed toxic metabolic encephalopathy and needed restraints to keep you from pulling out tubes.",
+        "It also says you had progressive organ failure, acute renal failure, decompensated liver failure, and hepatic encephalopathy.",
+        "You were described as intubated, sedated, and later made comfort-focused care."
+      ],
+      "explanation": "You were at high risk because your note shows confusion, severe illness, and need for restraints to keep you from pulling tubes. Your record also says you had progressive organ failure and hepatic encephalopathy, which can make falls more likely.",
+      "uncertainty_note": "The note does not give a direct fall history. This risk level is based on the documented confusion, severe illness, and need for restraints."
+    },
+    "v10": {
+      "risk_level": "High",
+      "evidence": [
+        "You had subtle confusion that was treated with lactulose and rifaximin.",
+        "You were sedated and intubated on admission, which means you could not move or protect yourself normally at that time.",
+        "Your course included progressive organ failure, and you needed restraints at one point to stop you from pulling out tubes.",
+        "You have spinal stenosis listed in your past medical history, which can affect movement and walking, but the note does not describe your day-to-day walking ability."
+      ],
+      "risk_factor_presence": {
+        "recent_fall": "not stated",
+        "recurrent_falls": "not stated",
+        "mobility_or_balance_impairment": "not stated",
+        "dizziness_or_syncope": "not stated",
+        "cognitive_impairment_or_confusion": "yes",
+        "sedative_or_psychoactive_medication": "not stated",
+        "frailty_or_weakness": "yes",
+        "walking_aid_or_mobility_assistance": "not stated",
+        "functional_or_environmental_safety_concerns": "yes"
+      },
+      "main_risk_factors": [
+        "Confusion and encephalopathy",
+        "Severe illness with progressive organ failure",
+        "Need for restraints to prevent pulling out tubes",
+        "Spinal stenosis in past medical history"
+      ],
+      "explanation": "You had a high fall risk because your note shows confusion, severe illness, and a period when you needed restraints to keep you safe. These can make it harder to move, think clearly, and protect yourself from falling. The note does not say that you had a recent fall, but it does show several strong risk factors.",
+      "recommended_actions": [
+        "Take your time when you stand up or start walking.",
+        "Use help if you feel unsteady, weak, or confused.",
+        "Keep your path clear and well lit so you do not trip.",
+        "Avoid walking alone if your thinking is not clear.",
+        "Ask someone to stay nearby during times when you feel weaker or less steady."
+      ],
+      "uncertainty_note": "The note does not state whether you had any recent falls or walking trouble before admission, so that part is unclear."
+    }
+},
+    };
+
+    // =========================
+    // DATA END
+    // 下面的渲染逻辑一般不用改
+    // =========================
+
+    const promptEntries = Object.keys(PROMPTS).map(key => ({
+      id: key,
+      name: PROMPT_META[key]?.name || key,
+      tag: PROMPT_META[key]?.tag || key.toUpperCase(),
+      desc: PROMPT_META[key]?.desc || "",
+      text: PROMPTS[key]
+    }));
+
+    function riskClass(level) {
+      if (level === "High") return "risk-high";
+      if (level === "Moderate") return "risk-moderate";
+      return "risk-low";
+    }
+
+    function createList(items = []) {
+      if (!items || items.length === 0) return "";
+      return items.map(item => `<li>${item}</li>`).join("");
+    }
+
+    function createKeyValueGrid(obj = {}) {
+      const entries = Object.entries(obj || {}).filter(([_, value]) => value !== undefined && value !== null && value !== "");
+      if (entries.length === 0) return "";
+      return `
+        <div class="kv-grid">
+          ${entries.map(([key, value]) => `
+            <div class="kv-item">
+              <div class="kv-key">${key}</div>
+              <div class="kv-value">${value}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function createSection(title, content) {
+      if (!content) return "";
+      return `
+        <div class="result-section">
+          <div class="label">${title}</div>
+          ${content}
+        </div>
+      `;
+    }
+
+    function createPromptCard(prompt) {
+      return `
+        <div class="prompt-card">
+          <div class="prompt-head">
+            <div class="prompt-name">${prompt.id.toUpperCase()} · ${prompt.name}</div>
+            <span class="badge">${prompt.tag}</span>
+          </div>
+          <div class="prompt-meta">${prompt.desc}</div>
+          <div class="prompt-text">${prompt.text}</div>
+        </div>
+      `;
+    }
+
+    function createResultCard(prompt, result = {}) {
+      const evidenceHtml = result.evidence?.length ? `<ul>${createList(result.evidence)}</ul>` : "";
+      const mainRiskFactorsHtml = result.main_risk_factors?.length ? `<ul>${createList(result.main_risk_factors)}</ul>` : "";
+      const actionsHtml = result.recommended_actions?.length ? `<ul>${createList(result.recommended_actions)}</ul>` : "";
+      const currentFallHtml = result.current_or_recent_fall_evidence?.length ? `<ul>${createList(result.current_or_recent_fall_evidence)}</ul>` : "";
+      const historicalFallHtml = result.historical_fall_evidence?.length ? `<ul>${createList(result.historical_fall_evidence)}</ul>` : "";
+      const otherRiskHtml = result.other_risk_factors?.length ? `<ul>${createList(result.other_risk_factors)}</ul>` : "";
+      const riskFactorGrid = createKeyValueGrid(result.risk_factor_presence);
+
+      return `
+        <div class="result-card">
+          <div class="result-card-title">
+            <strong>${prompt.id.toUpperCase()}</strong>
+            <span class="risk-pill ${riskClass(result.risk_level)}">${result.risk_level || ""}</span>
+          </div>
+
+          ${createSection("Explanation", result.explanation ? `<div class="value">${result.explanation}</div>` : "")}
+          ${createSection("Evidence", evidenceHtml)}
+          ${createSection("Risk Factor Presence", riskFactorGrid)}
+          ${createSection("Main Risk Factors", mainRiskFactorsHtml)}
+          ${createSection("Recommended Actions", actionsHtml)}
+          ${createSection("Current or Recent Fall Evidence", currentFallHtml)}
+          ${createSection("Historical Fall Evidence", historicalFallHtml)}
+          ${createSection("Other Risk Factors", otherRiskHtml)}
+          ${createSection("Uncertainty Note", result.uncertainty_note ? `<div class="value">${result.uncertainty_note}</div>` : "")}
+        </div>
+      `;
+    }
+
+    function renderPrompts() {
+      document.getElementById("promptGrid").innerHTML = promptEntries.map(createPromptCard).join("");
+    }
+
+    function renderCaseOptions() {
+      const select = document.getElementById("caseSelect");
+      select.innerHTML = cases.map(caseItem => `<option value="${caseItem.id}">${caseItem.title} · ${caseItem.label}</option>`).join("");
+      if (cases.length > 0) select.value = cases[0].id;
+    }
+
+    function renderCurrentCase(caseId) {
+      const caseItem = cases.find(item => item.id === caseId) || cases[0];
+      const currentResults = results[caseItem.id] || {};
+      document.getElementById("currentCaseStat").textContent = caseItem.title;
+
+      const resultCards = promptEntries.map(prompt => createResultCard(prompt, currentResults[prompt.id] || {})).join("");
+
+      document.getElementById("caseDisplay").innerHTML = `
+        <div class="case-block">
+          <div class="case-header">
+            <div class="case-top">
+              <div class="case-title">${caseItem.title}</div>
+              <span class="badge">${caseItem.label}</span>
+            </div>
+            <div class="case-meta">
+              
+            </div>
+          </div>
+
+          <div class="case-body">
+            <div class="case-text-box">
+              <h3>病例文本</h3>
+              <pre>${caseItem.text}</pre>
+            </div>
+            <div class="results-box">
+              <h3>对应 Prompt 的结果</h3>
+              <div class="results-grid">${resultCards}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function init() {
+      renderPrompts();
+      renderCaseOptions();
+      if (cases.length > 0) renderCurrentCase(cases[0].id);
+      document.getElementById("caseSelect").addEventListener("change", event => renderCurrentCase(event.target.value));
+    }
+
+    init();
+  </script>
+</body>
+</html>
