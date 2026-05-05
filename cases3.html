@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fall Risk Case Review</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: #f4f6f8;
+      color: #1f2937;
+      padding: 32px;
+    }
+
+    .page-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      margin-bottom: 28px;
+    }
+
+    .page-header h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+
+    .page-header p {
+      font-size: 16px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    .toolbar input,
+    .toolbar select {
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      min-width: 220px;
+    }
+
+    .toolbar input:focus,
+    .toolbar select:focus {
+      border-color: #2563eb;
+    }
+
+    .case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .case-card {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .case-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .case-title h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+      color: #111827;
+    }
+
+    .case-title span {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .risk-badge {
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .risk-high {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .risk-moderate {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .risk-low {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .info-section {
+      border-top: 1px solid #e5e7eb;
+      padding-top: 14px;
+    }
+
+    .info-section h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    .info-section p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #4b5563;
+    }
+
+    .info-section ul {
+      padding-left: 20px;
+      color: #4b5563;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .case-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .meta-item {
+      background: #f9fafb;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .meta-label {
+      display: block;
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .case-note {
+      max-height: 180px;
+      overflow-y: auto;
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #4b5563;
+      white-space: pre-wrap;
+    }
+
+    .empty-message {
+      display: none;
+      text-align: center;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 16px;
+      color: #6b7280;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 18px;
+      }
+
+      .page-header h1 {
+        font-size: 26px;
+      }
+
+      .toolbar {
+        flex-direction: column;
+      }
+
+      .toolbar input,
+      .toolbar select {
+        width: 100%;
+      }
+
+      .case-meta {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-container">
+    <header class="page-header">
+      <h1>Fall Risk Case Review</h1>
+      <p>This page displays three discharge-summary cases with risk level, evidence, explanation, and recommended actions.</p>
+    </header>
+
+    <section class="toolbar">
+      <input id="searchInput" type="text" placeholder="Search by case title, diagnosis, evidence..." />
+      <select id="riskFilter">
+        <option value="all">All risk levels</option>
+        <option value="High">High</option>
+        <option value="Moderate">Moderate</option>
+        <option value="Low">Low</option>
+      </select>
+    </section>
+
+    <section id="caseGrid" class="case-grid"></section>
+    <section id="emptyMessage" class="empty-message">No matching cases found.</section>
+  </main>
+
+  <script>
+    const cases = [
+      {
+        id: "Case 1",
+        title: "Mechanical Fall with Mobility Limitation",
+        age: "Older adult",
+        sex: "Not specified",
+        service: "Medicine",
+        diagnosis: "Fall-related admission",
+        riskLevel: "High",
+        evidence: [
+          "Documented fall before admission.",
+          "Mobility limitation was present near discharge.",
+          "The patient required assistance or a safer discharge plan."
+        ],
+        explanation:
+          "This case appears to have a higher fall risk because the discharge-time functional status suggests ongoing mobility or safety concerns.",
+        actions: [
+          "Use the recommended walking aid if one was provided.",
+          "Keep frequently used items within easy reach.",
+          "Ask for help when standing, transferring, or walking if feeling weak or unsteady.",
+          "Arrange follow-up with the care team if mobility worsens."
+        ],
+        note:
+          "Replace this text with the original discharge summary or a shortened case summary. You can paste the full clinical text here if needed."
+      },
+      {
+        id: "Case 2",
+        title: "Syncope with Improved Condition at Discharge",
+        age: "Older adult",
+        sex: "Male",
+        service: "Medicine",
+        diagnosis: "Syncope",
+        riskLevel: "Moderate",
+        evidence: [
+          "The patient had a syncopal episode before admission.",
+          "No clear ongoing confusion was documented.",
+          "Discharge condition appeared more stable than the initial presentation."
+        ],
+        explanation:
+          "This case may have a moderate fall risk because syncope can increase fall risk, but the final risk level should depend mainly on the condition closest to discharge.",
+        actions: [
+          "Rise slowly from sitting or lying positions.",
+          "Avoid walking alone if feeling dizzy or faint.",
+          "Follow the discharge instructions about hydration, medications, and follow-up appointments.",
+          "Seek urgent help if fainting, chest pain, severe shortness of breath, or new confusion occurs."
+        ],
+        note:
+          "Chief Complaint: Syncope. The patient presented after passing out. Replace this section with the full case text or your cleaned summary."
+      },
+      {
+        id: "Case 3",
+        title: "Postoperative Dizziness with Independent Mobility",
+        age: "Older adult",
+        sex: "Not specified",
+        service: "Surgery",
+        diagnosis: "Postoperative recovery",
+        riskLevel: "Low",
+        evidence: [
+          "Dizziness or nausea occurred earlier in admission but improved.",
+          "The patient was walking independently at discharge.",
+          "No major discharge-time mobility limitation was documented."
+        ],
+        explanation:
+          "This case may have a lower fall risk if earlier symptoms improved and the patient was independently mobile near discharge.",
+        actions: [
+          "Continue to be careful when walking after discharge.",
+          "Keep the home environment clear of loose rugs, clutter, or poor lighting.",
+          "Take breaks when tired and avoid rushing.",
+          "Contact the care team if dizziness returns or walking becomes unsafe."
+        ],
+        note:
+          "Replace this text with the third discharge summary or case summary. This example is designed for a lower-risk discharge-time profile."
+      }
+    ];
+
+    const caseGrid = document.getElementById("caseGrid");
+    const emptyMessage = document.getElementById("emptyMessage");
+    const searchInput = document.getElementById("searchInput");
+    const riskFilter = document.getElementById("riskFilter");
+
+    function getRiskClass(riskLevel) {
+      if (riskLevel === "High") return "risk-high";
+      if (riskLevel === "Moderate") return "risk-moderate";
+      return "risk-low";
+    }
+
+    function renderCases(caseList) {
+      caseGrid.innerHTML = "";
+
+      if (caseList.length === 0) {
+        emptyMessage.style.display = "block";
+        return;
+      }
+
+      emptyMessage.style.display = "none";
+
+      caseList.forEach((item) => {
+        const card = document.createElement("article");
+        card.className = "case-card";
+
+        card.innerHTML = `
+          <div class="case-top">
+            <div class="case-title">
+              <h2>${item.id}: ${item.title}</h2>
+              <span>${item.diagnosis}</span>
+            </div>
+            <span class="risk-badge ${getRiskClass(item.riskLevel)}">${item.riskLevel}</span>
+          </div>
+
+          <div class="case-meta">
+            <div class="meta-item">
+              <span class="meta-label">Age</span>
+              <span class="meta-value">${item.age}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Sex</span>
+              <span class="meta-value">${item.sex}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Service</span>
+              <span class="meta-value">${item.service}</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Risk Level</span>
+              <span class="meta-value">${item.riskLevel}</span>
+            </div>
+          </div>
+
+          <div class="info-section">
+            <h3>Key Evidence</h3>
+            <ul>
+              ${item.evidence.map((e) => `<li>${e}</li>`).join("")}
+            </ul>
+          </div>
+
+          <div class="info-section">
+            <h3>Explanation</h3>
+            <p>${item.explanation}</p>
+          </div>
+
+          <div class="info-section">
+            <h3>Recommended Actions</h3>
+            <ul>
+              ${item.actions.map((a) => `<li>${a}</li>`).join("")}
+            </ul>
+          </div>
+
+          <div class="info-section">
+            <h3>Original Case Note / Summary</h3>
+            <div class="case-note">${item.note}</div>
+          </div>
+        `;
+
+        caseGrid.appendChild(card);
+      });
+    }
+
+    function filterCases() {
+      const keyword = searchInput.value.toLowerCase().trim();
+      const selectedRisk = riskFilter.value;
+
+      const filtered = cases.filter((item) => {
+        const allText = [
+          item.id,
+          item.title,
+          item.age,
+          item.sex,
+          item.service,
+          item.diagnosis,
+          item.riskLevel,
+          item.explanation,
+          item.note,
+          ...item.evidence,
+          ...item.actions
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        const matchesKeyword = allText.includes(keyword);
+        const matchesRisk = selectedRisk === "all" || item.riskLevel === selectedRisk;
+
+        return matchesKeyword && matchesRisk;
+      });
+
+      renderCases(filtered);
+    }
+
+    searchInput.addEventListener("input", filterCases);
+    riskFilter.addEventListener("change", filterCases);
+
+    renderCases(cases);
+  </script>
+</body>
+</html>
