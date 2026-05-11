@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fall-Risk Accuracy Evaluation Demo</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --yellow: #ca8a04;
+      --yellow-soft: #fef9c3;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #eff6ff 0, #f6f7fb 42%, #ffffff 100%);
+      color: var(--text);
+    }
+
+    header { padding: 30px 38px 18px; }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 980px;
+      font-size: 15px;
+    }
+
+    .page { padding: 0 38px 38px; }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(229, 231, 235, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .case-switcher {
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .case-switcher-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .case-switcher-title h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .case-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .case-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 18px;
+      padding: 14px;
+      text-align: left;
+      cursor: pointer;
+      transition: .18s ease;
+      min-height: 128px;
+    }
+
+    .case-btn:hover {
+      transform: translateY(-1px);
+      border-color: #bfdbfe;
+    }
+
+    .case-btn.active {
+      border-color: var(--blue);
+      background: #f8fbff;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
+    }
+
+    .case-btn h3 {
+      margin: 9px 0 7px;
+      font-size: 15px;
+      line-height: 1.35;
+    }
+
+    .case-btn p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .badge-row { display: flex; flex-wrap: wrap; gap: 7px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .blue { background: var(--blue-soft); color: var(--blue); }
+    .green { background: var(--green-soft); color: var(--green); }
+    .yellow { background: var(--yellow-soft); color: var(--yellow); }
+    .red { background: var(--red-soft); color: var(--red); }
+    .gray { background: #f3f4f6; color: #4b5563; }
+
+    .hero { padding: 24px; margin-bottom: 22px; }
+    .hero-top { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+    .hero h2 { margin: 12px 0 8px; font-size: 25px; letter-spacing: -0.03em; }
+    .hero p { margin: 0; color: var(--muted); line-height: 1.65; }
+
+    .score-ring {
+      --deg: 360deg;
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background: conic-gradient(var(--green) var(--deg), #e5e7eb 0deg);
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      position: relative;
+    }
+
+    .score-ring::after {
+      content: "";
+      position: absolute;
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .score-ring span {
+      position: relative;
+      z-index: 1;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .summary-box {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .summary-box .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .summary-box .value { font-size: 18px; font-weight: 900; }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 800;
+      color: #374151;
+    }
+
+    .tab-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
+
+    .content-panel { padding: 22px; }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h3 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+
+    .text-box {
+      background: #0f172a;
+      color: #e5e7eb;
+      border-radius: 18px;
+      padding: 18px;
+      white-space: pre-wrap;
+      line-height: 1.65;
+      font-size: 13px;
+      max-height: 590px;
+      overflow: auto;
+    }
+
+    .cards-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .cards-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+
+    .card {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 18px;
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .card h4 { margin: 0 0 10px; font-size: 15px; }
+    .card ul { margin: 0; padding-left: 18px; line-height: 1.65; color: #374151; }
+    .card p { margin: 0; line-height: 1.65; color: #374151; }
+
+    .risk-banner {
+      border: 1px solid #bfdbfe;
+      border-radius: 18px;
+      padding: 18px;
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .risk-label { color: var(--muted); font-size: 12px; font-weight: 800; margin-bottom: 4px; }
+    .risk-value { font-size: 36px; font-weight: 950; letter-spacing: -0.05em; }
+
+    .rubric-standard {
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      border: 1px solid #bfdbfe;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .rubric-standard h4 { margin: 0 0 8px; color: var(--blue); }
+    .rubric-standard p { margin: 0; color: #374151; line-height: 1.6; }
+
+    .rubric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .rubric-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+    .rubric-head h4 { margin: 0; font-size: 16px; line-height: 1.35; }
+    .score-pill { background: var(--green-soft); color: var(--green); border-radius: 999px; padding: 6px 10px; font-weight: 900; white-space: nowrap; }
+
+    .checklist { margin-top: 12px; display: grid; gap: 9px; }
+    .check-item { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; font-size: 13px; line-height: 1.45; color: #374151; }
+    .check { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 900; }
+    .check.ok { background: var(--green-soft); color: var(--green); }
+    .check.no { background: var(--red-soft); color: var(--red); }
+
+    .process-list { counter-reset: step; display: grid; gap: 14px; }
+    .process-step {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      gap: 14px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .process-step::before {
+      counter-increment: step;
+      content: counter(step);
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 900;
+    }
+    .process-step h4 { margin: 0 0 6px; font-size: 15px; }
+    .process-step p { margin: 0; color: #4b5563; line-height: 1.65; }
+
+    .final-note {
+      background: linear-gradient(135deg, #f0fdf4, #ffffff);
+      border: 1px solid #bbf7d0;
+      border-radius: 18px;
+      padding: 18px;
+      line-height: 1.72;
+      color: #374151;
+    }
+
+    .final-note h4 { margin: 0 0 8px; color: var(--green); font-size: 18px; }
+
+    .test-panel {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1100px) {
+      .case-buttons,
+      .summary-grid,
+      .cards-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cards-2,
+      .rubric-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 700px) {
+      header,
+      .page { padding-left: 18px; padding-right: 18px; }
+      .hero-top,
+      .risk-banner { flex-direction: column; }
+      .case-buttons,
+      .summary-grid,
+      .cards-4 { grid-template-columns: 1fr; }
+      h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LLM Fall-Risk Accuracy Evaluation Demo</h1>
+    
+  </header>
+
+  <main class="page">
+    <section class="panel case-switcher">
+      <div class="case-switcher-title">
+        <h2>Choose case</h2>
+       
+      </div>
+      <div class="case-buttons" id="caseButtons"></div>
+    </section>
+
+   
+
+    <div class="tabs" role="tablist" aria-label="Case detail sections">
+      <button class="tab-btn active" type="button" data-tab="caseText">Case Text</button>
+      <button class="tab-btn" type="button" data-tab="llmResult">LLM Result</button>
+      <button class="tab-btn" type="button" data-tab="rubric">Unified Rubric Scores</button>
+      
+      <button class="tab-btn" type="button" data-tab="final">Final Assessment</button>
+    </div>
+
+    <section class="panel content-panel">
+      <div class="section active" id="caseText"></div>
+      <div class="section" id="llmResult"></div>
+      <div class="section" id="rubric"></div>
+      <div class="section" id="process"></div>
+      <div class="section" id="final"></div>
+    </section>
+
+    
+  </main>
+
+  <script>
+    const unifiedRubric = [
+      {
+        key: "factual",
+        name: "1. Factual correctness",
+        criteria: [
+          "Correctly identifies the main admission reason, procedure, or clinical event.",
+          "Correctly identifies major fall-risk increasing evidence.",
+          "Correctly identifies reassuring or risk-lowering evidence.",
+          "Correctly distinguishes discharge-time status from earlier temporary hospital status.",
+          "Correctly describes key details such as medications, diagnosis, discharge destination, mobility status, or care needs."
+        ]
+      },
+      {
+        key: "omission",
+        name: "2. Important omission",
+        criteria: [
+          "Covers discharge-time mobility status or mobility restrictions.",
+          "Covers cognition, alertness, or safety-awareness status when relevant.",
+          "Covers major fall-related events such as fall, recurrent falls, head strike, fracture, syncope, seizure, or loss of consciousness when present.",
+          "Covers discharge destination and care needs such as home services, rehab, extended care, PT, or caregiver support.",
+          "Covers medication or condition-related risks that affect fall-risk judgement, safety, or consistency."
+        ]
+      },
+      {
+        key: "hallucination",
+        name: "3. Hallucination",
+        criteria: [
+          "Does not invent unsupported clinical events.",
+          "Does not invent unsupported mobility status or weight-bearing status.",
+          "Does not invent unsupported discharge destination or care plan.",
+          "Does not invent unsupported medications, medication changes, diagnoses, follow-up, or medical orders.",
+          "Does not overstate uncertain information; uses cautious wording when evidence is unclear."
+        ]
+      },
+      {
+        key: "consistency",
+        name: "4. Consistency with discharge summary",
+        criteria: [
+          "Final risk level aligns with the discharge-time functional picture.",
+          "Explanation aligns with the listed evidence and does not contradict the risk level.",
+          "Patient-facing actions are consistent with discharge instructions and restrictions.",
+          "Caregiver-facing actions match the patient's actual care needs without overstatement or understatement.",
+          "Correctly handles conflicting information by prioritising discharge-time status."
+        ]
+      }
+    ];
+
+    const cases = [
+      {
+        id: "Case 1",
+        title: "Total thyroidectomy after multinodular goiter",
+        service: "Surgery",
+        diagnosis: "Multinodular goiter",
+        llmRisk: "Low",
+        suggestedRisk: "Low",
+        accuracyLevel: "High accuracy",
+        totalScore: 20,
+        criticalError: "No",
+        summary: "Postoperative nausea and dizziness improved; by POD#1 the patient was ambulating without concern; at discharge the patient was clear, alert, independently ambulatory, and discharged home.",
+        caseText: `Key discharge summary excerpts
+
+Chief complaint: Multinodular goiter.
+Procedure: Total thyroidectomy.
+
+Hospital course:
+- Tolerated the procedure without complication.
+- Postoperatively had nausea and dizziness, which improved with antiemetics.
+- Mild tongue tingling on POD#1 resolved.
+- POD#1: pain well controlled, tolerating diet, voiding independently, ambulating without concern.
+
+Discharge disposition: Home.
+Discharge condition:
+- Mental Status: Clear and coherent.
+- Level of Consciousness: Alert and interactive.
+- Activity Status: Ambulatory - Independent.
+
+Discharge instructions: Discharged once eating, on oral medications, walking, and completing daily activities per normal.`,
+        llm: {
+          risk: "Low",
+          riskEvidence: [
+            "Postoperatively, nausea and dizziness improved with antiemetics.",
+            "Clonazepam was listed on admission as a bedtime medication to use sparingly."
+          ],
+          reassuring: [
+            "By POD#1, the patient was ambulating without concern.",
+            "Discharge condition states mental status was clear and coherent, alert and interactive.",
+            "Discharge activity status was ambulatory and independent.",
+            "The patient was discharged home.",
+            "Discharge instructions say the patient was walking and completing daily activities per normal before discharge."
+          ],
+          factors: [
+            "Temporary postoperative dizziness and nausea that improved before discharge",
+            "Bedtime clonazepam use listed on admission"
+          ],
+          explanation: "Your fall risk looks low at discharge. You had some dizziness after surgery, but it improved, and you were walking without concern before you went home. Your thinking was clear, and you were independent with walking at discharge.",
+          patientActions: [
+            "Get up slowly if you feel sick or lightheaded.",
+            "Sit down right away if dizziness comes back.",
+            "Keep walking as you normally do, but use extra care for the first day or two."
+          ],
+          caregiverActions: [
+            "Remind the patient to rise slowly and pause before walking if any lightheaded feeling returns.",
+            "Stay nearby during early walking at home if the patient seems unsteady or nauseated.",
+            "Get urgent medical help if the patient has a fall, faints, has severe dizziness, new confusion, or new weakness."
+          ]
+        },
+        scores: {
+          factual: { score: 5, pass: [true, true, true, true, true], comment: "All key factual statements are supported by the discharge summary." },
+          omission: { score: 5, pass: [true, true, true, true, true], comment: "No important omission affecting fall-risk judgement, safety, or consistency was identified." },
+          hallucination: { score: 5, pass: [true, true, true, true, true], comment: "No unsupported clinical event, mobility status, care plan, medication, or overstatement was identified." },
+          consistency: { score: 5, pass: [true, true, true, true, true], comment: "Low risk is consistent with discharge-time independent ambulation, clear mental status, and home discharge." }
+        },
+        process: [
+          ["Identify discharge-time functional picture", "At discharge, the patient was clear and coherent, alert and interactive, and independently ambulatory. POD#1 also documented ambulation without concern."],
+          ["Identify risk-increasing evidence", "Postoperative dizziness and nausea occurred earlier but improved with antiemetics. Clonazepam was listed only as an admission medication."],
+          ["Identify reassuring evidence", "Pain was controlled, the patient tolerated diet, voided independently, walked without concern, and was discharged home."],
+          ["Judge risk level", "No discharge-time mobility impairment, cognitive impairment, fall, syncope, walking aid, or rehab need was documented, so Low risk is appropriate."],
+          ["Apply unified rubric", "The output meets all five items in each of the four dimensions. Total score: 20/20."]
+        ],
+        finalNote: "High accuracy. Low fall risk is appropriate because the patient had an uncomplicated postoperative recovery after total thyroidectomy, postoperative nausea and dizziness improved, and by POD#1 the patient was tolerating diet, voiding independently, ambulating without concern, and discharged home. Discharge condition documented clear mental status, alertness, and independent ambulation. No hallucination or important omission affecting fall-risk judgement, safety, or consistency was identified."
+      },
+      {
+        id: "Case 2",
+        title: "Right hip hemiarthroplasty after unwitnessed fall",
+        service: "Orthopaedics",
+        diagnosis: "Right femoral neck fracture",
+        llmRisk: "High",
+        suggestedRisk: "High",
+        accuracyLevel: "High accuracy",
+        totalScore: 20,
+        criticalError: "No",
+        summary: "Unwitnessed fall caused a right femoral neck fracture; recent prior fall involved head bleeding or possible SDH; baseline confusion was documented; therapy recommended rehab; the patient was discharged to extended care.",
+        caseText: `Key discharge summary excerpts
+
+Chief complaint: Right hip pain.
+Procedure: Right hip hemiarthroplasty.
+
+History:
+- Unwitnessed fall with right femoral neck fracture.
+- Recent prior admission after fall with head bleeding / IPH treated conservatively.
+- CT head showed possible acute on chronic SDH.
+- Patient was confused at baseline and poor historian due to baseline mental status.
+
+Hospital course:
+- Underwent right hip hemiarthroplasty.
+- Therapy determined discharge to rehab was appropriate.
+- At discharge: afebrile, stable vital signs, pain controlled, incision clean/dry/intact.
+- Right lower extremity weight bearing as tolerated.
+
+Discharge disposition: Extended Care.
+Discharge diagnosis: Femoral neck fracture.
+Discharge condition: Stable.`,
+        llm: {
+          risk: "High",
+          riskEvidence: [
+            "Admission followed an unwitnessed fall with a right femoral neck fracture.",
+            "Recent prior admission after a fall with head bleeding treated conservatively.",
+            "Patient was confused at baseline and a poor historian due to baseline mental status.",
+            "Discharged to Extended Care after therapy determined rehab was appropriate.",
+            "Walker or independent ambulation at discharge is not stated."
+          ],
+          reassuring: [
+            "At discharge, the patient was afebrile with stable vital signs.",
+            "Pain was well controlled with oral medications.",
+            "The patient was weight bearing as tolerated on the right leg.",
+            "Discharge condition was stable."
+          ],
+          factors: [
+            "Recent hip fracture with hip surgery",
+            "Recent repeated falls",
+            "Baseline confusion",
+            "Discharge to extended care or rehab rather than home"
+          ],
+          explanation: "Your fall risk is high because you had a recent fall that caused a hip fracture, and the note also describes a recent earlier fall. Your thinking was also noted to be confused at baseline, which can make walking less safe. It is reassuring that you were stable at discharge and allowed to put weight on your right leg, but you still need extra care with moving around.",
+          patientActions: [
+            "Use help when you get up or walk if staff tell you it is needed.",
+            "Move slowly when you stand up and start walking.",
+            "Wear safe non-slip shoes or socks.",
+            "Sit down right away if you feel unsteady."
+          ],
+          caregiverActions: [
+            "Help supervise walking, transfers, and bathroom trips because the patient had a recent hip fracture and baseline confusion.",
+            "Keep the walking path clear and make sure the patient uses any mobility support provided by the care team, if one is supplied.",
+            "Give extra help during position changes and after getting out of bed, since balance and safety awareness may be limited.",
+            "Seek urgent medical review if the patient has another fall, hits the head, faints, develops new confusion or weakness, has severe dizziness, or cannot bear weight."
+          ]
+        },
+        scores: {
+          factual: { score: 5, pass: [true, true, true, true, true], comment: "All key factual statements are supported by the discharge summary." },
+          omission: { score: 5, pass: [true, true, true, true, true], comment: "No important omission affecting fall-risk judgement, safety, or consistency was identified." },
+          hallucination: { score: 5, pass: [true, true, true, true, true], comment: "No unsupported mobility status, discharge destination, clinical event, or care plan was invented." },
+          consistency: { score: 5, pass: [true, true, true, true, true], comment: "High risk is consistent with hip fracture after unwitnessed fall, recent head bleeding, baseline confusion, and discharge to extended care or rehab." }
+        },
+        process: [
+          ["Identify high-risk evidence", "The patient had an unwitnessed fall causing a hip fracture, a recent prior fall with head bleeding or possible SDH, and baseline confusion."],
+          ["Identify discharge needs", "Therapy determined that discharge to rehab was appropriate, and the patient was discharged to extended care."],
+          ["Identify reassuring evidence", "At discharge, the patient was stable, afebrile, pain controlled, and weight bearing as tolerated."],
+          ["Judge risk level", "Hip fracture, repeated falls, cognitive risk, and extended care or rehab needs strongly support High risk."],
+          ["Apply unified rubric", "The output meets all five items in each of the four dimensions. Total score: 20/20."]
+        ],
+        finalNote: "High accuracy. High fall risk is appropriate because the patient had an unwitnessed fall causing a right femoral neck fracture, underwent right hip hemiarthroplasty, had a recent prior fall with head bleeding or possible intracranial hemorrhage, was confused at baseline and a poor historian, and was discharged to extended care or rehab after therapy assessment. Reassuring factors include stable discharge condition, controlled pain, and weight bearing as tolerated. No hallucination or important omission affecting fall-risk judgement, safety, or consistency was identified."
+      },
+      {
+        id: "Case 3",
+        title: "Open distal radius fracture after slip and fall on ice",
+        service: "Orthopaedics",
+        diagnosis: "Right open wrist fracture",
+        llmRisk: "Moderate",
+        suggestedRisk: "Moderate",
+        accuracyLevel: "High accuracy",
+        totalScore: 20,
+        criticalError: "No",
+        summary: "Slip and fall on ice caused an open right distal radius fracture; the patient underwent I&D with ORIF; the right arm was non-weight-bearing; sling use was required when ambulating; the patient was discharged home with services.",
+        caseText: `Key discharge summary excerpts
+
+Chief complaint: s/p slip and fall on ice.
+Procedure: I&D with ORIF right distal radius fracture.
+
+History:
+- Slip and fall on ice.
+- Found to have open right distal radius fracture.
+
+Hospital course:
+- Underwent I&D with ORIF of right distal radius fracture.
+- Seen by physical therapy to improve strength and mobility.
+- Hospital stay uneventful; labs and vital signs normal; pain controlled.
+- Discharged in stable condition.
+
+Discharge disposition: Home With Service.
+Discharge diagnosis: Right open wrist fracture.
+Discharge instructions:
+- Continue non-weight-bearing on right arm.
+- Keep splint clean and dry.
+- Wear sling only when ambulating.
+- Activity as tolerated.`,
+        llm: {
+          risk: "Moderate",
+          riskEvidence: [
+            "Discharge instructions say to continue non-weight bearing on the right arm.",
+            "The patient was told to wear a sling when ambulating.",
+            "Discharged home with services after surgery for an open right distal radius fracture.",
+            "Discharge medications include oxycodone and quetiapine, which can increase fall risk."
+          ],
+          reassuring: [
+            "Hospital course was described as uneventful.",
+            "The patient was seen by physical therapy to improve strength and mobility.",
+            "Lab data and vital signs were within normal limits.",
+            "Discharged in stable condition.",
+            "Activity was listed as tolerated."
+          ],
+          factors: [
+            "Recent fall with wrist fracture",
+            "Right arm non-weight-bearing after surgery",
+            "Need to use a sling when walking",
+            "Medicines that may cause sleepiness or slowed reaction"
+          ],
+          explanation: "Your fall risk is moderate because you recently fell and now need to protect your right arm after surgery. Wearing a sling when you walk and keeping your arm non-weight bearing can make daily movement less steady. It is reassuring that you were discharged in stable condition and your hospital stay was otherwise uneventful.",
+          patientActions: [
+            "Do not put weight on your right arm.",
+            "Wear your sling when you walk, as instructed.",
+            "Move slowly and use extra care when standing up and walking.",
+            "Sit down and get help if you feel unsteady."
+          ],
+          caregiverActions: [
+            "Help the patient follow the non-weight-bearing rule for the right arm and use the sling when walking.",
+            "Stay nearby during walking and transfers if the patient seems unsteady, especially after pain medicine.",
+            "Keep walkways clear and dry to lower the chance of another fall.",
+            "Seek urgent medical review if there is another fall, a head strike, new weakness, severe drowsiness, new confusion, or inability to walk safely."
+          ]
+        },
+        scores: {
+          factual: { score: 5, pass: [true, true, true, true, true], comment: "All key factual statements are supported by the discharge summary." },
+          omission: { score: 5, pass: [true, true, true, true, true], comment: "No important omission affecting fall-risk judgement, safety, or consistency was identified." },
+          hallucination: { score: 5, pass: [true, true, true, true, true], comment: "No unsupported fall details, mobility impairment, discharge destination, medication, or instruction was invented." },
+          consistency: { score: 5, pass: [true, true, true, true, true], comment: "Moderate risk is consistent with recent wrist fracture, right arm non-weight-bearing, sling use when ambulating, home services, and sedating medication risk, while stable discharge supports not rating as High." }
+        },
+        process: [
+          ["Identify risk-increasing evidence", "The patient had a recent slip and fall causing an open distal radius fracture, right upper-extremity non-weight-bearing status, sling use when ambulating, home services, and oxycodone or quetiapine exposure."],
+          ["Identify reassuring evidence", "The hospital course was uneventful, vital signs and labs were normal, pain was controlled, the patient was discharged stable, and activity was as tolerated."],
+          ["Judge risk level", "Upper-extremity non-weight-bearing and sling use can affect daily mobility safety, but there was no lower-limb restriction, confusion, rehab discharge, or inability to walk. Moderate risk is appropriate."],
+          ["Check hallucination", "The output did not add walker or cane use, lower-limb restriction, confusion, rehab discharge, or head strike."],
+          ["Apply unified rubric", "The output meets all five items in each of the four dimensions. Total score: 20/20."]
+        ],
+        finalNote: "High accuracy. Moderate fall risk is appropriate because the patient had a recent slip and fall causing an open right distal radius fracture, underwent I&D with ORIF, was discharged home with services, and had right upper-extremity non-weight-bearing instructions with sling use when ambulating. The output also correctly notes medication-related fall-risk concerns from oxycodone and quetiapine. Reassuring factors include stable discharge condition, uneventful hospital course, normal vital signs and labs, and activity as tolerated. No hallucination or important omission affecting fall-risk judgement, safety, or consistency was identified."
+      }
+    ];
+
+    let activeCaseIndex = 0;
+
+    function getActiveCase() {
+      return cases[activeCaseIndex];
+    }
+
+    function getElement(id) {
+      return document.getElementById(id);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function riskClass(risk) {
+      const value = String(risk).toLowerCase();
+      if (value.includes("high")) return "red";
+      if (value.includes("moderate")) return "yellow";
+      if (value.includes("low")) return "green";
+      return "gray";
+    }
+
+    function scoreClass(score) {
+      if (score >= 18) return "green";
+      if (score >= 14) return "yellow";
+      return "red";
+    }
+
+    function resultCard(title, arr) {
+      return `
+        <div class="card">
+          <h4>${escapeHtml(title)}</h4>
+          <ul>${arr.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+        </div>
+      `;
+    }
+
+    function renderCaseButtons() {
+      const container = getElement("caseButtons");
+      if (!container) return;
+
+      container.innerHTML = cases.map((c, index) => `
+        <button type="button" class="case-btn ${index === activeCaseIndex ? "active" : ""}" data-case-index="${index}">
+          <div class="badge-row">
+            <span class="badge ${riskClass(c.llmRisk)}">${escapeHtml(c.llmRisk)}</span>
+            <span class="badge ${scoreClass(c.totalScore)}">${c.totalScore}/20</span>
+          </div>
+          <h3>${escapeHtml(c.id)}: ${escapeHtml(c.title)}</h3>
+          <p>${escapeHtml(c.diagnosis)}</p>
+        </button>
+      `).join("");
+
+      container.querySelectorAll(".case-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          const nextIndex = Number(button.dataset.caseIndex);
+          if (Number.isNaN(nextIndex)) return;
+          activeCaseIndex = nextIndex;
+          render();
+          activateTab("caseText");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      });
+    }
+
+    function renderHero(c) {
+      const hero = getElement("hero");
+      if (!hero) return;
+
+      hero.innerHTML = `
+        <div class="hero-top">
+          <div>
+            <div class="badge-row">
+              <span class="badge blue">${escapeHtml(c.service)}</span>
+              <span class="badge gray">${escapeHtml(c.diagnosis)}</span>
+              <span class="badge ${riskClass(c.llmRisk)}">LLM risk: ${escapeHtml(c.llmRisk)}</span>
+              <span class="badge ${riskClass(c.suggestedRisk)}">Reviewer risk: ${escapeHtml(c.suggestedRisk)}</span>
+            </div>
+            <h2>${escapeHtml(c.id)}: ${escapeHtml(c.title)}</h2>
+            <p>${escapeHtml(c.summary)}</p>
+          </div>
+          <div class="score-ring" style="--deg:${Math.round((c.totalScore / 20) * 360)}deg"><span>${c.totalScore}/20</span></div>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-box"><div class="label">Accuracy level</div><div class="value">${escapeHtml(c.accuracyLevel)}</div></div>
+          <div class="summary-box"><div class="label">Critical error</div><div class="value">${escapeHtml(c.criticalError)}</div></div>
+          <div class="summary-box"><div class="label">LLM risk</div><div class="value">${escapeHtml(c.llmRisk)}</div></div>
+          <div class="summary-box"><div class="label">Reviewer risk</div><div class="value">${escapeHtml(c.suggestedRisk)}</div></div>
+        </div>
+      `;
+    }
+
+    function renderCaseText(c) {
+      const target = getElement("caseText");
+      if (!target) return;
+      target.innerHTML = `
+        
+        <div class="text-box">${escapeHtml(c.caseText)}</div>
+      `;
+    }
+
+    function renderLLM(c) {
+      const target = getElement("llmResult");
+      if (!target) return;
+
+      const o = c.llm;
+      target.innerHTML = `
+        <div class="section-title"><h3>LLM-Generated Result</h3><span class="badge ${riskClass(o.risk)}">Risk level: ${escapeHtml(o.risk)}</span></div>
+        <div class="risk-banner">
+          <div>
+            <div class="risk-label">Generated risk level</div>
+            <div class="risk-value ${riskClass(o.risk)}" style="background:transparent;padding:0;">${escapeHtml(o.risk)}</div>
+          </div>
+          <div style="max-width:720px;line-height:1.65;color:#374151;">${escapeHtml(o.explanation)}</div>
+        </div>
+        <div class="cards-2">
+          ${resultCard("Risk-increasing evidence", o.riskEvidence)}
+          ${resultCard("Reassuring evidence", o.reassuring)}
+          ${resultCard("Main risk factors", o.factors)}
+          ${resultCard("Patient actions", o.patientActions)}
+          ${resultCard("Caregiver actions", o.caregiverActions)}
+        </div>
+      `;
+    }
+
+    function renderRubric(c) {
+      const target = getElement("rubric");
+      if (!target) return;
+
+      target.innerHTML = `
+        <div class="section-title"><h3>Unified Accuracy Rubric</h3><span class="badge ${scoreClass(c.totalScore)}">Total: ${c.totalScore}/20</span></div>
+        <div class="rubric-standard">
+          <h4>Same rubric applied to all cases</h4>
+          <p>Each case is evaluated using the same fixed rubric. Each dimension contains five fixed items, and each fulfilled item receives one point. Across cases, only the evidence, score, and reviewer comment change.</p>
+        </div>
+        <div class="rubric-grid">
+          ${unifiedRubric.map(r => {
+            const s = c.scores[r.key];
+            return `
+              <div class="card">
+                <div class="rubric-head"><h4>${escapeHtml(r.name)}</h4><span class="score-pill">${s.score}/5</span></div>
+                <p>${escapeHtml(s.comment)}</p>
+                <div class="checklist">
+                  ${r.criteria.map((criterion, idx) => `
+                    <div class="check-item">
+                      <span class="check ${s.pass[idx] ? "ok" : "no"}">${s.pass[idx] ? "✓" : "×"}</span>
+                      <span>${escapeHtml(criterion)}</span>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function renderProcess(c) {
+      const target = getElement("process");
+      if (!target) return;
+      target.innerHTML = `
+        <div class="section-title"><h3>Evaluation Process</h3><span class="badge blue">How the score was assigned</span></div>
+        <div class="process-list">
+          ${c.process.map(([title, text]) => `
+            <div class="process-step"><div><h4>${escapeHtml(title)}</h4><p>${escapeHtml(text)}</p></div></div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderFinal(c) {
+      const target = getElement("final");
+      if (!target) return;
+      target.innerHTML = `
+        <div class="section-title"><h3>Final Assessment</h3><span class="badge ${scoreClass(c.totalScore)}">${escapeHtml(c.accuracyLevel)}</span></div>
+        <div class="final-note"><h4>Reviewer notes</h4>${escapeHtml(c.finalNote)}</div>
+        <div class="cards-4" style="margin-top:14px;">
+          ${unifiedRubric.map(r => `
+            <div class="summary-box"><div class="label">${escapeHtml(r.name)}</div><div class="value">${c.scores[r.key].score}/5</div></div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function activateTab(tabId) {
+      const tabs = document.querySelectorAll(".tab-btn");
+      const sections = document.querySelectorAll(".section");
+      const target = getElement(tabId);
+      if (!target) return;
+
+      tabs.forEach(tab => tab.classList.toggle("active", tab.dataset.tab === tabId));
+      sections.forEach(section => section.classList.toggle("active", section.id === tabId));
+    }
+
+    function setupTabs() {
+      document.querySelectorAll(".tab-btn").forEach(tab => {
+        tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+      });
+    }
+
+    function render() {
+      const c = getActiveCase();
+      renderCaseButtons();
+      renderHero(c);
+      renderCaseText(c);
+      renderLLM(c);
+      renderRubric(c);
+      renderProcess(c);
+      renderFinal(c);
+    }
+
+    function runTests() {
+      const results = [];
+      function assert(name, condition) {
+        results.push({ name, passed: Boolean(condition) });
+        if (!condition) console.error(`Test failed: ${name}`);
+      }
+
+      assert("Exactly three cases are available", cases.length === 3);
+      assert("Case 1 is active by default", getActiveCase().id === "Case 1");
+      assert("Unified rubric has four dimensions", unifiedRubric.length === 4);
+      assert("Every rubric dimension has five criteria", unifiedRubric.every(r => r.criteria.length === 5));
+      assert("Case buttons container exists", Boolean(getElement("caseButtons")));
+      assert("Three case buttons rendered", document.querySelectorAll(".case-btn").length === 3);
+      assert("Five tabs are available", document.querySelectorAll(".tab-btn").length === 5);
+      assert("No Chinese characters are present in page text", !/[\u3400-\u9FFF]/.test(document.body.innerText));
+
+      const passed = results.filter(r => r.passed).length;
+      const output = getElement("testOutput");
+      if (output) {
+        output.textContent = `Self-check: ${passed}/${results.length} tests passed. Case switching is enabled, and the displayed content is English-only.`;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupTabs();
+      render();
+      runTests();
+    });
+  </script>
+</body>
+</html>
