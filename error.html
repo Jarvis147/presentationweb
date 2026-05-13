@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Error Analysis: Weight-Bearing Wording</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --blue: #2563eb;
+      --blue-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --yellow: #ca8a04;
+      --yellow-soft: #fef9c3;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --orange: #ea580c;
+      --orange-soft: #ffedd5;
+      --shadow: 0 16px 38px rgba(15, 23, 42, 0.08);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #eff6ff 0, #f6f7fb 42%, #ffffff 100%);
+      color: var(--text);
+    }
+
+    header {
+      padding: 32px 42px 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.1;
+      letter-spacing: -0.045em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 1000px;
+      font-size: 15px;
+    }
+
+    .page {
+      padding: 0 42px 42px;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(229, 231, 235, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .blue { background: var(--blue-soft); color: var(--blue); }
+    .green { background: var(--green-soft); color: var(--green); }
+    .yellow { background: var(--yellow-soft); color: var(--yellow); }
+    .red { background: var(--red-soft); color: var(--red); }
+    .orange { background: var(--orange-soft); color: var(--orange); }
+    .gray { background: #f3f4f6; color: #4b5563; }
+
+    .hero {
+      padding: 26px;
+      margin-bottom: 22px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(234, 88, 12, 0.15), transparent 64%);
+      top: -160px;
+      right: -120px;
+      pointer-events: none;
+    }
+
+    .hero-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h2 {
+      margin: 14px 0 10px;
+      font-size: 28px;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 980px;
+    }
+
+    .score-card {
+      width: 170px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .score-card .score {
+      font-size: 34px;
+      font-weight: 950;
+      letter-spacing: -0.04em;
+      color: var(--orange);
+      margin-bottom: 4px;
+    }
+
+    .score-card .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .summary-box {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .summary-box .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .summary-box .value {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 850;
+      color: #374151;
+    }
+
+    .tab-btn.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: white;
+    }
+
+    .content-panel {
+      padding: 22px;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 21px;
+      letter-spacing: -0.025em;
+    }
+
+    .cards-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .cards-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 18px;
+      padding: 17px;
+      min-width: 0;
+    }
+
+    .card h4 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .card p {
+      margin: 0;
+      line-height: 1.68;
+      color: #374151;
+    }
+
+    .card ul {
+      margin: 0;
+      padding-left: 18px;
+      line-height: 1.68;
+      color: #374151;
+    }
+
+    .quote-card {
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .quote-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
+    }
+
+    .quote-text {
+      font-size: 20px;
+      line-height: 1.45;
+      font-weight: 850;
+      letter-spacing: -0.02em;
+    }
+
+    .quote-card.error {
+      border-color: #fed7aa;
+      background: linear-gradient(135deg, #fff7ed, #ffffff);
+    }
+
+    .quote-card.correct {
+      border-color: #bbf7d0;
+      background: linear-gradient(135deg, #f0fdf4, #ffffff);
+    }
+
+    .arrow-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 14px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }
+
+    .arrow {
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 32px;
+      font-weight: 950;
+    }
+
+    .impact-box {
+      border: 1px solid #fed7aa;
+      background: linear-gradient(135deg, #fff7ed, #ffffff);
+      border-radius: 18px;
+      padding: 18px;
+      line-height: 1.7;
+      color: #374151;
+      margin-top: 14px;
+    }
+
+    .impact-box h4 {
+      color: var(--orange);
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .rubric-standard {
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      border: 1px solid #bfdbfe;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .rubric-standard h4 {
+      margin: 0 0 8px;
+      color: var(--blue);
+    }
+
+    .rubric-standard p {
+      margin: 0;
+      color: #374151;
+      line-height: 1.6;
+    }
+
+    .rubric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .rubric-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .rubric-head h4 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .score-pill {
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .score-pill.full { background: var(--green-soft); color: var(--green); }
+    .score-pill.partial { background: var(--yellow-soft); color: var(--yellow); }
+
+    .checklist {
+      margin-top: 12px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 8px;
+      align-items: start;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #374151;
+    }
+
+    .check {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .check.ok { background: var(--green-soft); color: var(--green); }
+    .check.no { background: var(--red-soft); color: var(--red); }
+
+    .process-list {
+      counter-reset: step;
+      display: grid;
+      gap: 14px;
+    }
+
+    .process-step {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      gap: 14px;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .process-step::before {
+      counter-increment: step;
+      content: counter(step);
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .process-step h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+    }
+
+    .process-step p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.65;
+    }
+
+    .final-note {
+      background: linear-gradient(135deg, #f0fdf4, #ffffff);
+      border: 1px solid #bbf7d0;
+      border-radius: 18px;
+      padding: 18px;
+      line-height: 1.72;
+      color: #374151;
+    }
+
+    .final-note h4 {
+      margin: 0 0 8px;
+      color: var(--green);
+      font-size: 18px;
+    }
+
+    .test-panel {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 1000px) {
+      .summary-grid,
+      .cards-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cards-2,
+      .rubric-grid,
+      .arrow-grid { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); }
+    }
+
+    @media (max-width: 700px) {
+      header,
+      .page { padding-left: 18px; padding-right: 18px; }
+      .hero-top { grid-template-columns: 1fr; }
+      .summary-grid,
+      .cards-3 { grid-template-columns: 1fr; }
+      h1 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Error Analysis: Misleading Weight-Bearing Wording</h1>
+    <p class="subtitle">This presentation page shows how a small wording error can create safety risk, even when the overall fall-risk level is correct.</p>
+  </header>
+
+  <main class="page">
+    <section class="panel hero" id="hero"></section>
+
+    <div class="tabs" role="tablist" aria-label="Error analysis sections">
+      <button class="tab-btn active" type="button" data-tab="caseContext">Case Context</button>
+      <button class="tab-btn" type="button" data-tab="wordingError">Wording Error</button>
+      <button class="tab-btn" type="button" data-tab="rubric">Rubric Impact</button>
+      <button class="tab-btn" type="button" data-tab="process">Evaluation Process</button>
+      <button class="tab-btn" type="button" data-tab="final">Final Assessment</button>
+    </div>
+
+    <section class="panel content-panel">
+      <div class="section active" id="caseContext"></div>
+      <div class="section" id="wordingError"></div>
+      <div class="section" id="rubric"></div>
+      <div class="section" id="process"></div>
+      <div class="section" id="final"></div>
+    </section>
+
+    <section class="test-panel" id="testOutput" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const unifiedRubric = [
+      {
+        key: "factual",
+        name: "1. Factual correctness",
+        criteria: [
+          "Correctly identifies the main admission reason, procedure, or clinical event.",
+          "Correctly identifies major fall-risk increasing evidence.",
+          "Correctly identifies reassuring or risk-lowering evidence.",
+          "Correctly distinguishes discharge-time status from earlier temporary hospital status.",
+          "Correctly describes key details such as medications, diagnosis, discharge destination, mobility status, or care needs."
+        ]
+      },
+      {
+        key: "omission",
+        name: "2. Important omission",
+        criteria: [
+          "Covers discharge-time mobility status or mobility restrictions.",
+          "Covers cognition, alertness, or safety-awareness status when relevant.",
+          "Covers major fall-related events such as fall, recurrent falls, head strike, fracture, syncope, seizure, or loss of consciousness when present.",
+          "Covers discharge destination and care needs such as home services, rehab, extended care, PT, or caregiver support.",
+          "Covers medication or condition-related risks that affect fall-risk judgement, safety, or consistency."
+        ]
+      },
+      {
+        key: "hallucination",
+        name: "3. Hallucination",
+        criteria: [
+          "Does not invent unsupported clinical events.",
+          "Does not invent unsupported mobility status or weight-bearing status.",
+          "Does not invent unsupported discharge destination or care plan.",
+          "Does not invent unsupported medications, medication changes, diagnoses, follow-up, or medical orders.",
+          "Does not overstate uncertain information; uses cautious wording when evidence is unclear."
+        ]
+      },
+      {
+        key: "consistency",
+        name: "4. Consistency with discharge summary",
+        criteria: [
+          "Final risk level aligns with the discharge-time functional picture.",
+          "Explanation aligns with the listed evidence and does not contradict the risk level.",
+          "Patient-facing actions are consistent with discharge instructions and restrictions.",
+          "Caregiver-facing actions match the patient's actual care needs without overstatement or understatement.",
+          "Correctly handles conflicting information by prioritising discharge-time status."
+        ]
+      }
+    ];
+
+    const errorCase = {
+      id: "Error Case",
+      title: "Recent left tib/fib pilon fracture with non-weight-bearing restriction",
+      service: "Medicine",
+      diagnosis: "DRESS with recent orthopedic injury and ongoing mobility restriction",
+      llmRisk: "High",
+      suggestedRisk: "High",
+      accuracyLevel: "Moderate-to-high accuracy",
+      totalScore: 17,
+      criticalError: "No",
+      mainErrorType: "Misleading wording / safety-related omission",
+      summary: "The overall High fall-risk rating was appropriate, but one risk-factor phrase was misleading: the output wrote 'No weight bearing restriction at discharge' instead of 'Non-weight-bearing restriction at discharge.'",
+      sourceContext: [
+        "Recent left tib/fib pilon fracture with ongoing orthopedic restrictions.",
+        "Transitional issues instructed the patient to continue current activity restrictions pending orthopedic re-evaluation, including no weight bearing and limited dangling time.",
+        "Discharge condition listed activity status as out of bed with assistance to chair or wheelchair.",
+        "Discharge disposition was home with service.",
+        "Mental status was clear and coherent; level of consciousness was alert and interactive."
+      ],
+      llmCorrect: [
+        "The output correctly assigned High fall risk.",
+        "It correctly identified strict activity limits and the need for assistance to chair or wheelchair.",
+        "It gave appropriate patient actions, including not putting weight on the leg and asking for help with transfers.",
+        "It did not invent independent walking, confusion, syncope, or a new fall."
+      ],
+      errorPhrase: "No weight bearing restriction at discharge",
+      likelyMisread: "No restriction on weight bearing at discharge",
+      correctPhrase: "Non-weight-bearing restriction at discharge",
+      plainCorrectPhrase: "No weight bearing allowed at discharge",
+      whyItMatters: "The phrase 'No weight bearing restriction' can be interpreted as meaning that the patient has no restriction and may bear weight. However, the discharge summary documented the opposite: the patient should not bear weight and required assistance for out-of-bed movement. If interpreted literally, this could increase fall risk and orthopedic safety risk.",
+      scores: {
+        factual: {
+          score: 4,
+          pass: [true, true, true, true, false],
+          comment: "Mostly correct, but the phrase 'No weight bearing restriction at discharge' is factually misleading because the discharge summary documented a non-weight-bearing restriction."
+        },
+        omission: {
+          score: 4,
+          pass: [true, true, true, true, false],
+          comment: "The main fall-risk evidence was covered. The meaningful omission was anticoagulation and INR follow-up, which are relevant to bleeding risk if another fall occurs."
+        },
+        hallucination: {
+          score: 5,
+          pass: [true, true, true, true, true],
+          comment: "No clear hallucination was identified. The issue is misleading wording rather than invented information."
+        },
+        consistency: {
+          score: 4,
+          pass: [true, true, true, true, false],
+          comment: "The overall judgement was consistent, but the wording about weight-bearing status created an internal inconsistency with the discharge summary."
+        }
+      },
+      process: [
+        ["Identify the discharge-time mobility picture", "The patient had a recent serious lower-limb fracture, ongoing non-weight-bearing restrictions, limited dangling time, and required assistance out of bed to a chair or wheelchair."],
+        ["Check whether the risk level is appropriate", "High fall risk is appropriate because strict weight-bearing limits and assisted transfers create major mobility safety risk."],
+        ["Locate the wording error", "The output listed 'No weight bearing restriction at discharge,' which can be read as no restriction on weight bearing."],
+        ["Compare with the source meaning", "The discharge summary meant no weight bearing allowed, not no restriction. The safer wording is 'Non-weight-bearing restriction at discharge' or 'No weight bearing allowed at discharge.'"],
+        ["Decide scoring impact", "This is not a full hallucination because the model recognised the weight-bearing issue and later gave correct actions. It is a misleading wording and consistency error with safety relevance."]
+      ],
+      finalNote: "Moderate-to-high accuracy. The output is mostly supported by the discharge summary, and the High fall-risk rating is appropriate. The patient had a recent serious left tib/fib pilon fracture, ongoing no-weight-bearing restrictions pending orthopedic re-evaluation, limited dangling time, and discharge activity status requiring assistance out of bed to a chair or wheelchair. No hallucination was identified. The main issue is wording: 'No weight bearing restriction at discharge' is potentially misleading and should be written as 'Non-weight-bearing restriction at discharge' or 'No weight bearing allowed at discharge.' The output also did not mention warfarin and INR monitoring, which is relevant to bleeding risk if another fall occurs."
+    };
+
+    function getElement(id) {
+      return document.getElementById(id);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function riskClass(risk) {
+      const value = String(risk).toLowerCase();
+      if (value.includes("high")) return "red";
+      if (value.includes("moderate")) return "yellow";
+      if (value.includes("low")) return "green";
+      return "gray";
+    }
+
+    function scoreClass(score) {
+      if (score >= 18) return "green";
+      if (score >= 14) return "yellow";
+      return "red";
+    }
+
+    function listItems(items) {
+      return `<ul>${items.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+    }
+
+    function renderHero() {
+      const hero = getElement("hero");
+      if (!hero) return;
+
+      hero.innerHTML = `
+        <div class="hero-top">
+          <div>
+            <div class="badge-row">
+              <span class="badge blue">${escapeHtml(errorCase.service)}</span>
+              <span class="badge gray">${escapeHtml(errorCase.diagnosis)}</span>
+              <span class="badge ${riskClass(errorCase.llmRisk)}">LLM risk: ${escapeHtml(errorCase.llmRisk)}</span>
+              <span class="badge ${riskClass(errorCase.suggestedRisk)}">Reviewer risk: ${escapeHtml(errorCase.suggestedRisk)}</span>
+              <span class="badge orange">${escapeHtml(errorCase.mainErrorType)}</span>
+            </div>
+            <h2>${escapeHtml(errorCase.title)}</h2>
+            <p>${escapeHtml(errorCase.summary)}</p>
+          </div>
+          <div class="score-card">
+            <div class="score">${errorCase.totalScore}/20</div>
+            <div class="label">Overall accuracy score</div>
+          </div>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-box"><div class="label">Accuracy level</div><div class="value">${escapeHtml(errorCase.accuracyLevel)}</div></div>
+          <div class="summary-box"><div class="label">Critical error</div><div class="value">${escapeHtml(errorCase.criticalError)}</div></div>
+          <div class="summary-box"><div class="label">LLM risk</div><div class="value">${escapeHtml(errorCase.llmRisk)}</div></div>
+          <div class="summary-box"><div class="label">Reviewer risk</div><div class="value">${escapeHtml(errorCase.suggestedRisk)}</div></div>
+        </div>
+      `;
+    }
+
+    function renderCaseContext() {
+      const target = getElement("caseContext");
+      if (!target) return;
+
+      target.innerHTML = `
+        <div class="section-title"><h3>Case Context</h3><span class="badge gray">Source-based summary</span></div>
+        <div class="cards-2">
+          <div class="card">
+            <h4>Key discharge summary evidence</h4>
+            ${listItems(errorCase.sourceContext)}
+          </div>
+          <div class="card">
+            <h4>What the LLM got right</h4>
+            ${listItems(errorCase.llmCorrect)}
+          </div>
+        </div>
+        <div class="impact-box">
+          <h4>Initial judgement</h4>
+          The High fall-risk level is appropriate because the discharge-time functional picture shows a strict lower-limb mobility restriction and assisted transfers. The main problem is not the risk level itself, but one misleading phrase about weight-bearing status.
+        </div>
+      `;
+    }
+
+    function renderWordingError() {
+      const target = getElement("wordingError");
+      if (!target) return;
+
+      target.innerHTML = `
+        <div class="section-title"><h3>Wording Error</h3><span class="badge orange">Potential safety issue</span></div>
+        <div class="arrow-grid">
+          <div class="quote-card error">
+            <div class="quote-label">LLM wording</div>
+            <div class="quote-text">“${escapeHtml(errorCase.errorPhrase)}”</div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="quote-card correct">
+            <div class="quote-label">Safer wording</div>
+            <div class="quote-text">“${escapeHtml(errorCase.correctPhrase)}”</div>
+          </div>
+        </div>
+        <div class="cards-2">
+          <div class="card">
+            <h4>Possible incorrect interpretation</h4>
+            <p>“${escapeHtml(errorCase.likelyMisread)}”</p>
+          </div>
+          <div class="card">
+            <h4>Plain-language correction</h4>
+            <p>“${escapeHtml(errorCase.plainCorrectPhrase)}”</p>
+          </div>
+        </div>
+        <div class="impact-box">
+          <h4>Why this matters</h4>
+          ${escapeHtml(errorCase.whyItMatters)}
+        </div>
+      `;
+    }
+
+    function renderRubric() {
+      const target = getElement("rubric");
+      if (!target) return;
+
+      target.innerHTML = `
+        <div class="section-title"><h3>Rubric Impact</h3><span class="badge ${scoreClass(errorCase.totalScore)}">Total: ${errorCase.totalScore}/20</span></div>
+        <div class="rubric-standard">
+          <h4>Same four-dimension rubric</h4>
+          <p>The case is still evaluated with the same rubric. The wording issue affects factual correctness and consistency, while hallucination remains full score because the model did not invent a new clinical fact.</p>
+        </div>
+        <div class="rubric-grid">
+          ${unifiedRubric.map(r => {
+            const s = errorCase.scores[r.key];
+            return `
+              <div class="card">
+                <div class="rubric-head">
+                  <h4>${escapeHtml(r.name)}</h4>
+                  <span class="score-pill ${s.score === 5 ? "full" : "partial"}">${s.score}/5</span>
+                </div>
+                <p>${escapeHtml(s.comment)}</p>
+                <div class="checklist">
+                  ${r.criteria.map((criterion, idx) => `
+                    <div class="check-item">
+                      <span class="check ${s.pass[idx] ? "ok" : "no"}">${s.pass[idx] ? "✓" : "×"}</span>
+                      <span>${escapeHtml(criterion)}</span>
+                    </div>
+                  `).join("")}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    function renderProcess() {
+      const target = getElement("process");
+      if (!target) return;
+
+      target.innerHTML = `
+        <div class="section-title"><h3>Evaluation Process</h3><span class="badge blue">Step-by-step review</span></div>
+        <div class="process-list">
+          ${errorCase.process.map(([title, text]) => `
+            <div class="process-step"><div><h4>${escapeHtml(title)}</h4><p>${escapeHtml(text)}</p></div></div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderFinal() {
+      const target = getElement("final");
+      if (!target) return;
+
+      target.innerHTML = `
+        <div class="section-title"><h3>Final Assessment</h3><span class="badge ${scoreClass(errorCase.totalScore)}">${escapeHtml(errorCase.accuracyLevel)}</span></div>
+        <div class="final-note"><h4>Reviewer notes</h4>${escapeHtml(errorCase.finalNote)}</div>
+        <div class="cards-3" style="margin-top:14px;">
+          <div class="summary-box"><div class="label">Main error type</div><div class="value">Wording inconsistency</div></div>
+          <div class="summary-box"><div class="label">Suggested risk level</div><div class="value">High</div></div>
+          <div class="summary-box"><div class="label">Critical error</div><div class="value">No</div></div>
+        </div>
+      `;
+    }
+
+    function activateTab(tabId) {
+      const tabs = document.querySelectorAll(".tab-btn");
+      const sections = document.querySelectorAll(".section");
+      const target = getElement(tabId);
+      if (!target) return;
+
+      tabs.forEach(tab => tab.classList.toggle("active", tab.dataset.tab === tabId));
+      sections.forEach(section => section.classList.toggle("active", section.id === tabId));
+    }
+
+    function setupTabs() {
+      document.querySelectorAll(".tab-btn").forEach(tab => {
+        tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+      });
+    }
+
+    function render() {
+      renderHero();
+      renderCaseContext();
+      renderWordingError();
+      renderRubric();
+      renderProcess();
+      renderFinal();
+    }
+
+    function runTests() {
+      const results = [];
+      function assert(name, condition) {
+        results.push({ name, passed: Boolean(condition) });
+        if (!condition) console.error(`Test failed: ${name}`);
+      }
+
+      assert("Unified rubric has four dimensions", unifiedRubric.length === 4);
+      assert("Every rubric dimension has five criteria", unifiedRubric.every(r => r.criteria.length === 5));
+      assert("Error case total score is 17", errorCase.totalScore === 17);
+      assert("Hallucination score remains full", errorCase.scores.hallucination.score === 5);
+      assert("Factual correctness is reduced", errorCase.scores.factual.score === 4);
+      assert("Consistency is reduced", errorCase.scores.consistency.score === 4);
+      assert("Five tabs are available", document.querySelectorAll(".tab-btn").length === 5);
+      assert("No Chinese characters are present in page text", !/[\u3400-\u9FFF]/.test(document.body.innerText));
+
+      const passed = results.filter(r => r.passed).length;
+      const output = getElement("testOutput");
+      if (output) {
+        output.textContent = `Self-check: ${passed}/${results.length} tests passed. The error analysis page is English-only.`;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setupTabs();
+      render();
+      runTests();
+    });
+  </script>
+</body>
+</html>
